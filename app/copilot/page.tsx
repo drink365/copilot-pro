@@ -19,12 +19,12 @@ export default function CopilotPage() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })
   }, [messages])
 
-  // 回跳驗證：Stripe 成功付款會帶回 session_id
+  // 回跳驗證（ECPay 支付完成導回 /copilot?RtnCode=1&...）
   useEffect(() => {
     const u = new URL(window.location.href)
-    const sid = u.searchParams.get("session_id")
-    if (sid) {
-      fetch(`/api/stripe/verify?session_id=${sid}`)
+    const rtn = u.searchParams.get("RtnCode")
+    if (rtn) {
+      fetch(`/api/ecpay/verify?${u.searchParams.toString()}`)
         .then(r => r.json())
         .then(d => {
           if (d.ok) {
@@ -33,7 +33,8 @@ export default function CopilotPage() {
           } else {
             alert(d.error || "驗證失敗")
           }
-          u.searchParams.delete("session_id")
+          // 清掉網址參數避免重複驗證
+          u.searchParams.forEach((_, k) => u.searchParams.delete(k))
           window.history.replaceState({}, "", u.toString())
         })
         .catch(() => alert("驗證時發生錯誤"))
@@ -44,17 +45,21 @@ export default function CopilotPage() {
   }, [])
 
   async function upgrade() {
-    const res = await fetch("/api/stripe/checkout", { method: "POST" })
+    // 取得可自動送出的 ECPay HTML，開新視窗寫入並自動 submit
+    const res = await fetch("/api/ecpay/checkout", { method: "POST" })
     const data = await res.json()
-    if (data.url) window.location.href = data.url
-    else alert(data.error || "建立結帳連結失敗")
-  }
-
-  async function openPortal() {
-    const r = await fetch("/api/stripe/portal", { method: "POST" })
-    const d = await r.json()
-    if (d.url) window.location.href = d.url
-    else alert(d.error || "開啟訂閱管理失敗")
+    if (!res.ok || !data.html) {
+      alert(data.error || "建立金流連線失敗")
+      return
+    }
+    const w = window.open("", "_blank")
+    if (!w) {
+      alert("請允許彈出視窗以完成付款")
+      return
+    }
+    w.document.open()
+    w.document.write(data.html)
+    w.document.close()
   }
 
   async function send(content: string) {
@@ -70,7 +75,6 @@ export default function CopilotPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || "發生錯誤")
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }])
-      // 從回傳同步是否為 Pro（非必要）
       if (typeof data.isPro === "boolean") setIsPro(!!data.isPro)
     } catch (e: any) {
       setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message}` }])
@@ -110,12 +114,7 @@ export default function CopilotPage() {
           <div className="flex gap-2">
             {!isPro && (
               <button onClick={upgrade} className="rounded-lg bg-amber-600 px-3 py-1.5 text-white text-sm hover:bg-amber-700">
-                升級專業版
-              </button>
-            )}
-            {isPro && (
-              <button onClick={openPortal} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-100">
-                管理訂閱
+                升級專業版（ECPay）
               </button>
             )}
           </div>

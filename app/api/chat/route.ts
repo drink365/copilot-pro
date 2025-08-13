@@ -1,8 +1,8 @@
+// app/api/chat/route.ts
 import { NextRequest, NextResponse } from "next/server"
 
 export const runtime = "edge"
 
-// 專業 System Prompt（保險 × 傳承 × 稅源預留）
 const SYSTEM_PROMPT = `
 你是「AI Copilot Pro｜永傳家族傳承教練」：
 - 專長：壽險策略（定壽/終壽/投資型/增額/信託搭配）、稅源預留、遺贈稅邏輯、跨境情境、企業接班。
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "缺少 content" }, { status: 400 })
   }
 
-  // 免費方案：每日 3 次（以 cookie + UTC 日期簡易限制）
+  // 免費方案：每日 3 次（cookie + UTC）
   const dateKey = getDateKey()
   const cookieKey = `copilot_uses_${dateKey}`
   const current = Number(req.cookies.get(cookieKey)?.value || "0")
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "GROQ_API_KEY 未設定" }, { status: 500 })
   }
 
-  // Groq 的 OpenAI 相容 Chat Completions 端點
+  // ✅ 強制使用 Groq 的 OpenAI 相容端點
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {

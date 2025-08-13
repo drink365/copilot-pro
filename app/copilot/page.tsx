@@ -28,9 +28,7 @@ export default function CopilotPage() {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })
   }, [messages])
 
-  // 啟動時：1) 若信用卡成功回傳 RtnCode=1 → /api/ecpay/verify 開通
-  //       2) 若 CVS/ATM 導回（帶 MerchantTradeNo / PaymentNo / BankCode / vAccount / ExpireDate）
-  //       3) 平時檢查是否已有 Pro（Cookie）
+  // 啟動時處理：信用卡成功回傳(RtnCode=1)→verify；CVS/ATM 取號導回；否則讀 cookie 判斷是否 Pro
   useEffect(() => {
     const u = new URL(window.location.href)
     const rtn = u.searchParams.get("RtnCode")
@@ -58,21 +56,14 @@ export default function CopilotPage() {
       return
     }
 
-    // 取號導回（CVS/ATM）
+    // CVS/ATM 取號導回（帶取號資料）
     if (mtn) {
       setMerchantTradeNo(mtn)
-      if (payType.includes("CVS")) {
-        setMethod("CVS")
-        setCvsPaymentNo(pNo)
-      } else if (payType.includes("ATM")) {
-        setMethod("ATM")
-        setAtmBank(bank)
-        setAtmAccount(va)
-      }
+      if (payType.includes("CVS")) { setMethod("CVS"); setCvsPaymentNo(pNo) }
+      else if (payType.includes("ATM")) { setMethod("ATM"); setAtmBank(bank); setAtmAccount(va) }
       if (exp) setExpireDate(exp)
-      // 不清 Query，保留資訊到使用者付款完成
     } else {
-      // 平時檢查是否已是 Pro（透過 Cookie）
+      // 平時檢查是否已 Pro
       fetch("/api/debug").then(r => r.json()).then(d => setIsPro(!!d.isPro)).catch(() => {})
     }
 
@@ -90,37 +81,20 @@ export default function CopilotPage() {
       body: JSON.stringify({ method })
     })
     const data = await res.json()
-    if (!res.ok || !data.html) {
-      alert(data.error || "建立金流連線失敗")
-      return
-    }
-    // 帶著 tradeNo 也顯示在畫面（以防導回沒帶）
-    if (data.tradeNo) setMerchantTradeNo(data.tradeNo)
+    if (!res.ok || !data.html) return alert(data.error || "建立金流連線失敗")
 
+    if (data.tradeNo) setMerchantTradeNo(data.tradeNo)
     const w = window.open("", "_blank")
-    if (!w) {
-      alert("請允許彈出視窗以完成付款")
-      return
-    }
-    w.document.open()
-    w.document.write(data.html)
-    w.document.close()
+    if (!w) return alert("請允許彈出視窗以完成付款")
+    w.document.open(); w.document.write(data.html); w.document.close()
   }
 
-  // CVS/ATM 完成付款後：點此查詢並解鎖
   async function redeem() {
-    if (!merchantTradeNo) {
-      alert("缺少訂單編號，請先完成取號或付款流程。")
-      return
-    }
+    if (!merchantTradeNo) return alert("缺少訂單編號，請先完成取號或付款流程。")
     const r = await fetch(`/api/ecpay/query?MerchantTradeNo=${encodeURIComponent(merchantTradeNo)}`)
     const d = await r.json()
-    if (d.ok && d.paid) {
-      setIsPro(true)
-      alert("已確認入帳，專業版已解鎖！")
-    } else {
-      alert(d.message || "尚未入帳，請稍後再試。")
-    }
+    if (d.ok && d.paid) { setIsPro(true); alert("已確認入帳，專業版已解鎖！") }
+    else alert(d.message || "尚未入帳，請稍後再試。")
   }
 
   async function send(content: string) {
@@ -129,8 +103,7 @@ export default function CopilotPage() {
     setLoading(true)
     try {
       const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content })
       })
       const data = await res.json()
@@ -139,27 +112,19 @@ export default function CopilotPage() {
       if (typeof data.isPro === "boolean") setIsPro(!!data.isPro)
     } catch (e: any) {
       setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message}` }])
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const onSend = async () => {
-    const content = input.trim()
-    if (!content) return
-    setInput("")
-    await send(content)
+    const content = input.trim(); if (!content) return
+    setInput(""); await send(content)
   }
 
   const runTemplate = async (id: string) => {
-    const t = templates.find(x => x.id === id)
-    if (!t) return
+    const t = templates.find(x => x.id === id); if (!t) return
     await send(t.prompt())
   }
-
-  const runQuick = async (prompt: string) => {
-    await send(prompt)
-  }
+  const runQuick = async (p: string) => { await send(p) }
 
   return (
     <main className="grid gap-4">
@@ -170,24 +135,16 @@ export default function CopilotPage() {
             <div className="font-semibold text-slate-800">
               {isPro ? "專業版：已解鎖" : "目前：免費版（每日 3 次）"}
             </div>
-            {!isPro && <div className="text-xs text-slate-500 mt-1">升級可解鎖：無限對話、更多模板、未來提案 PDF/PPT 匯出與私人知識庫</div>}
+            {!isPro && <div className="text-xs text-slate-500 mt-1">升級可解鎖：無限對話、更多模板、之後加入提案 PDF/PPT 與私人知識庫</div>}
           </div>
-
           {!isPro && (
             <div className="flex items-center gap-2">
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value as PayMethod)}
-                className="rounded-lg border px-2 py-1 text-sm"
-              >
+              <select value={method} onChange={(e) => setMethod(e.target.value as PayMethod)} className="rounded-lg border px-2 py-1 text-sm">
                 <option value="Credit">信用卡</option>
                 <option value="CVS">超商代碼</option>
                 <option value="ATM">ATM 轉帳</option>
               </select>
-              <button
-                onClick={upgrade}
-                className="rounded-lg bg-amber-600 px-3 py-1.5 text-white text-sm hover:bg-amber-700"
-              >
+              <button onClick={upgrade} className="rounded-lg bg-amber-600 px-3 py-1.5 text-white text-sm hover:bg-amber-700">
                 升級專業版（ECPay）
               </button>
             </div>
@@ -197,25 +154,15 @@ export default function CopilotPage() {
         {/* 取號資訊（CVS/ATM） */}
         {!isPro && merchantTradeNo && (
           <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-            <div className="font-medium">訂單編號（MerchantTradeNo）：{merchantTradeNo}</div>
-            {method === "CVS" && cvsPaymentNo && (
-              <div className="mt-1">超商繳費代碼：<span className="font-mono">{cvsPaymentNo}</span></div>
-            )}
+            <div className="font-medium">訂單編號：{merchantTradeNo}</div>
+            {method === "CVS" && cvsPaymentNo && <div className="mt-1">超商繳費代碼：<span className="font-mono">{cvsPaymentNo}</span></div>}
             {method === "ATM" && (atmBank || atmAccount) && (
-              <div className="mt-1">
-                銀行代碼：<span className="font-mono">{atmBank}</span>；虛擬帳號：<span className="font-mono">{atmAccount}</span>
-              </div>
+              <div className="mt-1">銀行代碼：<span className="font-mono">{atmBank}</span>；虛擬帳號：<span className="font-mono">{atmAccount}</span></div>
             )}
             {expireDate && <div className="mt-1 text-xs text-slate-600">繳費期限：{expireDate}</div>}
-
             <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={redeem}
-                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-100"
-              >
-                我已完成付款，解鎖專業版
-              </button>
-              <span className="text-xs text-slate-500">（系統將即時向綠界查詢入帳狀態）</span>
+              <button onClick={redeem} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-100">我已完成付款，解鎖專業版</button>
+              <span className="text-xs text-slate-500">（系統會向綠界查詢入帳狀態）</span>
             </div>
           </div>
         )}
@@ -229,10 +176,7 @@ export default function CopilotPage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {templates.map(t => (
-            <button key={t.id}
-              onClick={() => runTemplate(t.id)}
-              className="text-left rounded-xl border border-slate-200 bg-slate-50 p-3 hover:bg-slate-100"
-            >
+            <button key={t.id} onClick={() => runTemplate(t.id)} className="text-left rounded-xl border border-slate-200 bg-slate-50 p-3 hover:bg-slate-100">
               <div className="text-sm font-medium">{t.title}</div>
               {t.subtitle && <div className="text-xs text-slate-600 mt-1">{t.subtitle}</div>}
               <div className="text-[11px] text-slate-500 mt-2">一鍵產出話術／會議大綱／風險提醒</div>
@@ -241,10 +185,7 @@ export default function CopilotPage() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           {quickActions.map(q => (
-            <button key={q.id}
-              onClick={() => runQuick(q.prompt)}
-              className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs hover:bg-slate-100"
-            >
+            <button key={q.id} onClick={() => runQuick(q.prompt)} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs hover:bg-slate-100">
               {q.label}
             </button>
           ))}
@@ -266,24 +207,17 @@ export default function CopilotPage() {
       {/* 輸入區 */}
       <div className="flex gap-2">
         <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
+          value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && onSend()}
           placeholder="也可以直接輸入你的客戶情境與需求"
           className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
         />
-        <button
-          onClick={onSend}
-          disabled={loading}
-          className="rounded-xl bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 disabled:opacity-50"
-        >
+        <button onClick={onSend} disabled={loading} className="rounded-xl bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 disabled:opacity-50">
           送出
         </button>
       </div>
 
-      <p className="text-xs text-slate-500">
-        免費方案：每日 3 次互動。升級後可解鎖更多模板、提案 PDF/PPT 匯出與私人知識庫。
-      </p>
+      <p className="text-xs text-slate-500">免費方案：每日 3 次互動。升級後可解鎖更多模板、提案 PDF/PPT 匯出與私人知識庫。</p>
     </main>
   )
 }

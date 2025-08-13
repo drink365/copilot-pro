@@ -27,18 +27,19 @@ export function ecpayEndpoint(mode: "Stage" | "Prod") {
     : "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"
 }
 
-// ECPay CheckMacValue：依照文件規則（鍵名排序、串接、URL encode、SHA256 大寫）
+export function ecpayQueryEndpoint(mode: "Stage" | "Prod") {
+  return mode === "Prod"
+    ? "https://payment.ecpay.com.tw/Cashier/QueryTradeInfo/V5"
+    : "https://payment-stage.ecpay.com.tw/Cashier/QueryTradeInfo/V5"
+}
+
+// ECPay CheckMacValue：依文件規則（鍵名排序、串接、URL encode、SHA256 大寫）
 export function genCheckMacValue(params: Record<string, string>, hashKey: string, hashIV: string): string {
-  // 1) 排除 CheckMacValue 自身並排序（鍵名不分大小寫）
   const sorted = Object.keys(params)
     .filter(k => k !== "CheckMacValue")
     .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
-
-  // 2) 串接 query string
   const query = sorted.map(k => `${k}=${params[k]}`).join("&")
   const raw = `HashKey=${hashKey}&${query}&HashIV=${hashIV}`
-
-  // 3) URL encode（注意大小寫與特殊字元處理）
   const encoded = encodeURIComponent(raw)
     .toLowerCase()
     .replace(/%20/g, "+")
@@ -46,10 +47,7 @@ export function genCheckMacValue(params: Record<string, string>, hashKey: string
     .replace(/%28/g, "(")
     .replace(/%29/g, ")")
     .replace(/%2a/g, "*")
-
-  // 4) SHA256 並大寫
-  const hash = crypto.createHash("sha256").update(encoded).digest("hex").toUpperCase()
-  return hash
+  return crypto.createHash("sha256").update(encoded).digest("hex").toUpperCase()
 }
 
 // 快速產生訂單編號（避免重複）
@@ -59,6 +57,5 @@ export function genTradeNo(prefix = "PRO"): string {
   const mm = String(now.getMonth() + 1).padStart(2, "0")
   const dd = String(now.getDate()).padStart(2, "0")
   const rand = Math.random().toString(36).slice(2, 8).toUpperCase()
-  // ECPay MerchantTradeNo 最長 20 碼，保守起見控制長度
   return `${prefix}${yyyy}${mm}${dd}${rand}`.slice(0, 20)
 }

@@ -4,34 +4,40 @@ import { genCheckMacValue, getConfig, ecpayEndpoint, genTradeNo } from "../_lib"
 
 export const runtime = "nodejs"
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   const cfg = getConfig()
   const endpoint = ecpayEndpoint(cfg.mode)
 
-  // 你可以把金額/商品名稱抽到 .env 或資料表
+  const body = await req.json().catch(() => ({} as any))
+  const method = (body?.method || "Credit") as "Credit" | "CVS" | "ATM"
+
   const totalAmount = process.env.PRO_PRICE_TWD ? Number(process.env.PRO_PRICE_TWD) : 990 // NTD
   const itemName = process.env.PRO_ITEM_NAME || "AI Copilot Pro 專業版（月費）"
+  const tradeNo = genTradeNo("PRO")
 
-  // ECPay 必填參數（AIO v5）
-  const form: Record<string, string> = {
+  const base: Record<string, string> = {
     MerchantID: cfg.merchantId,
-    MerchantTradeNo: genTradeNo("PRO"),
-    MerchantTradeDate: new Date().toISOString().replace("T", " ").slice(0, 19), // yyyy-MM-dd HH:mm:ss
+    MerchantTradeNo: tradeNo,
+    MerchantTradeDate: new Date().toISOString().replace("T", " ").slice(0, 19),
     PaymentType: "aio",
     TotalAmount: String(totalAmount),
     TradeDesc: "Copilot Pro Subscription",
     ItemName: itemName,
-    ReturnURL: `${cfg.siteUrl}/api/ecpay/notify`,            // 伺服器背景通知
-    OrderResultURL: `${cfg.siteUrl}/copilot`,                 // 付款完成導回頁（帶結果）
-    ClientBackURL: `${cfg.siteUrl}/copilot`,                  // 使用者取消或返回
-    ChoosePayment: "ALL",
-    EncryptType: "1" // 1=SHA256
+    ReturnURL: `${cfg.siteUrl}/api/ecpay/notify`, // server to server
+    OrderResultURL: `${cfg.siteUrl}/copilot`,      // 使用者導回頁
+    ClientBackURL: `${cfg.siteUrl}/copilot`,
+    ChoosePayment: method,
+    EncryptType: "1"
   }
 
-  // 產生 CheckMacValue
-  const CheckMacValue = genCheckMacValue(form, cfg.hashKey, cfg.hashIV)
+  // CVS/ATM 需要繳費期限（分鐘）
+  if (method === "CVS" || method === "ATM") {
+    base["StoreExpireDate"] = process.env.PRO_STORE_EXPIRE_MIN || "4320" // 3 days
+    // 你也可以加 PaymentInfoURL 接收取號資訊：`${cfg.siteUrl}/api/ecpay/info`
+  }
 
-  // 回傳可自動送出的 HTML（前端新視窗寫入）
+  const CheckMacValue = genCheckMacValue(base, cfg.hashKey, cfg.hashIV)
+
   const html = `
 <!doctype html>
 <html lang="zh-Hant">
@@ -39,7 +45,7 @@ export async function POST(_req: NextRequest) {
 <body onload="document.forms[0].submit()">
   <p>連線至金流中，請稍候…</p>
   <form method="post" action="${endpoint}">
-    ${Object.entries(form).map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, "&quot;")}" />`).join("\n")}
+    ${Object.entries(base).map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v).replace(/"/g, "&quot;")}" />`).join("\n")}
     <input type="hidden" name="CheckMacValue" value="${CheckMacValue}" />
     <noscript><button type="submit">前往付款</button></noscript>
   </form>
@@ -47,5 +53,5 @@ export async function POST(_req: NextRequest) {
 </html>
 `.trim()
 
-  return NextResponse.json({ html })
+  return NextResponse.json({ html, tradeNo, method })
 }

@@ -1,6 +1,7 @@
+// app/copilot/page.tsx
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { templates, quickActions } from "./templates"
 
 type Msg = { role: "user" | "assistant"; content: string }
@@ -11,9 +12,50 @@ export default function CopilotPage() {
   ])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [isPro, setIsPro] = useState<boolean>(false)
   const listRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }) }, [messages])
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })
+  }, [messages])
+
+  // 回跳驗證：Stripe 成功付款會帶回 session_id
+  useEffect(() => {
+    const u = new URL(window.location.href)
+    const sid = u.searchParams.get("session_id")
+    if (sid) {
+      fetch(`/api/stripe/verify?session_id=${sid}`)
+        .then(r => r.json())
+        .then(d => {
+          if (d.ok) {
+            setIsPro(true)
+            alert("升級成功！已解鎖專業版。")
+          } else {
+            alert(d.error || "驗證失敗")
+          }
+          u.searchParams.delete("session_id")
+          window.history.replaceState({}, "", u.toString())
+        })
+        .catch(() => alert("驗證時發生錯誤"))
+    } else {
+      // 啟動時讀取 debug 判斷是否已是 Pro（透過 Cookie）
+      fetch("/api/debug").then(r => r.json()).then(d => setIsPro(!!d.isPro)).catch(() => {})
+    }
+  }, [])
+
+  async function upgrade() {
+    const res = await fetch("/api/stripe/checkout", { method: "POST" })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+    else alert(data.error || "建立結帳連結失敗")
+  }
+
+  async function openPortal() {
+    const r = await fetch("/api/stripe/portal", { method: "POST" })
+    const d = await r.json()
+    if (d.url) window.location.href = d.url
+    else alert(d.error || "開啟訂閱管理失敗")
+  }
 
   async function send(content: string) {
     if (!content.trim()) return
@@ -28,6 +70,8 @@ export default function CopilotPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data?.error || "發生錯誤")
       setMessages(prev => [...prev, { role: "assistant", content: data.reply }])
+      // 從回傳同步是否為 Pro（非必要）
+      if (typeof data.isPro === "boolean") setIsPro(!!data.isPro)
     } catch (e: any) {
       setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message}` }])
     } finally {
@@ -54,6 +98,30 @@ export default function CopilotPage() {
 
   return (
     <main className="grid gap-4">
+      {/* 頂部狀態與按鈕 */}
+      <section className="rounded-2xl bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="text-sm">
+            <div className="font-semibold text-slate-800">
+              {isPro ? "專業版：已解鎖" : "目前：免費版（每日 3 次）"}
+            </div>
+            {!isPro && <div className="text-xs text-slate-500 mt-1">升級可解鎖：無限對話、更多模板、未來提案 PDF/PPT 匯出與私人知識庫</div>}
+          </div>
+          <div className="flex gap-2">
+            {!isPro && (
+              <button onClick={upgrade} className="rounded-lg bg-amber-600 px-3 py-1.5 text-white text-sm hover:bg-amber-700">
+                升級專業版
+              </button>
+            )}
+            {isPro && (
+              <button onClick={openPortal} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-100">
+                管理訂閱
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* 情境模板區 */}
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between mb-2">

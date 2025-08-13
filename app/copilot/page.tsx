@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import { templates, quickActions } from "./templates"
 
 type Msg = { role: "user" | "assistant"; content: string }
+type PayMethod = "Credit" | "CVS" | "ATM"
 
 export default function CopilotPage() {
   const [messages, setMessages] = useState<Msg[]>([
@@ -13,17 +14,35 @@ export default function CopilotPage() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [isPro, setIsPro] = useState<boolean>(false)
-  const listRef = useRef<HTMLDivElement>(null)
 
+  // 取號資訊（CVS/ATM 導回會帶參數）
+  const [method, setMethod] = useState<PayMethod>("Credit")
+  const [merchantTradeNo, setMerchantTradeNo] = useState<string>("")
+  const [cvsPaymentNo, setCvsPaymentNo] = useState<string>("") // CVS: 繳費代碼
+  const [atmBank, setAtmBank] = useState<string>("")           // ATM: 銀行代碼
+  const [atmAccount, setAtmAccount] = useState<string>("")     // ATM: 虛擬帳號
+  const [expireDate, setExpireDate] = useState<string>("")     // 期限
+
+  const listRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })
   }, [messages])
 
-  // 回跳驗證（ECPay 支付完成導回 /copilot?RtnCode=1&...）
+  // 啟動時：1) 若信用卡成功回傳 RtnCode=1 → /api/ecpay/verify 開通
+  //       2) 若 CVS/ATM 導回（帶 MerchantTradeNo / PaymentNo / BankCode / vAccount / ExpireDate）
+  //       3) 平時檢查是否已有 Pro（Cookie）
   useEffect(() => {
     const u = new URL(window.location.href)
     const rtn = u.searchParams.get("RtnCode")
-    if (rtn) {
+    const mtn = u.searchParams.get("MerchantTradeNo")
+    const payType = u.searchParams.get("PaymentType") || ""
+    const pNo = u.searchParams.get("PaymentNo") || ""    // CVS
+    const bank = u.searchParams.get("BankCode") || ""    // ATM
+    const va = u.searchParams.get("vAccount") || ""      // ATM
+    const exp = u.searchParams.get("ExpireDate") || ""
+
+    if (rtn === "1") {
+      // 信用卡即時付款成功
       fetch(`/api/ecpay/verify?${u.searchParams.toString()}`)
         .then(r => r.json())
         .then(d => {
@@ -33,25 +52,51 @@ export default function CopilotPage() {
           } else {
             alert(d.error || "驗證失敗")
           }
-          // 清掉網址參數避免重複驗證
-          u.searchParams.forEach((_, k) => u.searchParams.delete(k))
-          window.history.replaceState({}, "", u.toString())
+          clearQuery()
         })
         .catch(() => alert("驗證時發生錯誤"))
+      return
+    }
+
+    // 取號導回（CVS/ATM）
+    if (mtn) {
+      setMerchantTradeNo(mtn)
+      if (payType.includes("CVS")) {
+        setMethod("CVS")
+        setCvsPaymentNo(pNo)
+      } else if (payType.includes("ATM")) {
+        setMethod("ATM")
+        setAtmBank(bank)
+        setAtmAccount(va)
+      }
+      if (exp) setExpireDate(exp)
+      // 不清 Query，保留資訊到使用者付款完成
     } else {
-      // 啟動時讀取 debug 判斷是否已是 Pro（透過 Cookie）
+      // 平時檢查是否已是 Pro（透過 Cookie）
       fetch("/api/debug").then(r => r.json()).then(d => setIsPro(!!d.isPro)).catch(() => {})
+    }
+
+    function clearQuery() {
+      const nu = new URL(window.location.href)
+      nu.searchParams.forEach((_, k) => nu.searchParams.delete(k))
+      window.history.replaceState({}, "", nu.toString())
     }
   }, [])
 
   async function upgrade() {
-    // 取得可自動送出的 ECPay HTML，開新視窗寫入並自動 submit
-    const res = await fetch("/api/ecpay/checkout", { method: "POST" })
+    const res = await fetch("/api/ecpay/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ method })
+    })
     const data = await res.json()
     if (!res.ok || !data.html) {
       alert(data.error || "建立金流連線失敗")
       return
     }
+    // 帶著 tradeNo 也顯示在畫面（以防導回沒帶）
+    if (data.tradeNo) setMerchantTradeNo(data.tradeNo)
+
     const w = window.open("", "_blank")
     if (!w) {
       alert("請允許彈出視窗以完成付款")
@@ -60,6 +105,22 @@ export default function CopilotPage() {
     w.document.open()
     w.document.write(data.html)
     w.document.close()
+  }
+
+  // CVS/ATM 完成付款後：點此查詢並解鎖
+  async function redeem() {
+    if (!merchantTradeNo) {
+      alert("缺少訂單編號，請先完成取號或付款流程。")
+      return
+    }
+    const r = await fetch(`/api/ecpay/query?MerchantTradeNo=${encodeURIComponent(merchantTradeNo)}`)
+    const d = await r.json()
+    if (d.ok && d.paid) {
+      setIsPro(true)
+      alert("已確認入帳，專業版已解鎖！")
+    } else {
+      alert(d.message || "尚未入帳，請稍後再試。")
+    }
   }
 
   async function send(content: string) {
@@ -102,7 +163,7 @@ export default function CopilotPage() {
 
   return (
     <main className="grid gap-4">
-      {/* 頂部狀態與按鈕 */}
+      {/* 頂部狀態與付費選擇 */}
       <section className="rounded-2xl bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="text-sm">
@@ -111,14 +172,53 @@ export default function CopilotPage() {
             </div>
             {!isPro && <div className="text-xs text-slate-500 mt-1">升級可解鎖：無限對話、更多模板、未來提案 PDF/PPT 匯出與私人知識庫</div>}
           </div>
-          <div className="flex gap-2">
-            {!isPro && (
-              <button onClick={upgrade} className="rounded-lg bg-amber-600 px-3 py-1.5 text-white text-sm hover:bg-amber-700">
+
+          {!isPro && (
+            <div className="flex items-center gap-2">
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value as PayMethod)}
+                className="rounded-lg border px-2 py-1 text-sm"
+              >
+                <option value="Credit">信用卡</option>
+                <option value="CVS">超商代碼</option>
+                <option value="ATM">ATM 轉帳</option>
+              </select>
+              <button
+                onClick={upgrade}
+                className="rounded-lg bg-amber-600 px-3 py-1.5 text-white text-sm hover:bg-amber-700"
+              >
                 升級專業版（ECPay）
               </button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
+
+        {/* 取號資訊（CVS/ATM） */}
+        {!isPro && merchantTradeNo && (
+          <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
+            <div className="font-medium">訂單編號（MerchantTradeNo）：{merchantTradeNo}</div>
+            {method === "CVS" && cvsPaymentNo && (
+              <div className="mt-1">超商繳費代碼：<span className="font-mono">{cvsPaymentNo}</span></div>
+            )}
+            {method === "ATM" && (atmBank || atmAccount) && (
+              <div className="mt-1">
+                銀行代碼：<span className="font-mono">{atmBank}</span>；虛擬帳號：<span className="font-mono">{atmAccount}</span>
+              </div>
+            )}
+            {expireDate && <div className="mt-1 text-xs text-slate-600">繳費期限：{expireDate}</div>}
+
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={redeem}
+                className="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-100"
+              >
+                我已完成付款，解鎖專業版
+              </button>
+              <span className="text-xs text-slate-500">（系統將即時向綠界查詢入帳狀態）</span>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 情境模板區 */}

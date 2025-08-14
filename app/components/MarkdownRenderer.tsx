@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import ReactMarkdown from "react-markdown"
-import remarkGfm from "remark-gfm" // ✅ ESM default import，傳進去的是函式
+import remarkGfm from "remark-gfm" // ← 必須是 ESM default import
 
 type Props = { content: string }
 
@@ -11,7 +11,7 @@ export default function MarkdownRenderer({ content }: Props) {
   return (
     <div className="prose prose-sm sm:prose-base max-w-none">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}  // ✅ 傳入函式本體，不是物件
+        remarkPlugins={[remarkGfm]} // ← 傳入函式，不是物件/undefined
         components={{
           a: (props) => <a {...props} target="_blank" rel="noreferrer" />,
           table: (props) => (

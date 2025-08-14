@@ -4,6 +4,8 @@
 import { useEffect, useRef, useState } from "react"
 import AdminBar from "../components/AdminBar"
 import { templates, quickActions } from "./templates"
+import MessageBubble from "../components/MessageBubble"
+import clsx from "classnames"
 
 type Msg = { role: "user" | "assistant"; content: string }
 type PayMethod = "Credit" | "CVS" | "ATM"
@@ -113,108 +115,143 @@ export default function CopilotPage() {
     const content = input.trim(); if (!content) return
     setInput(""); await send(content)
   }
+
   const runTemplate = async (id: string) => {
     const t = templates.find(x => x.id === id); if (!t) return
     await send(t.prompt())
   }
   const runQuick = async (p: string) => { await send(p) }
 
-  // 只有在「非 production」或設 NEXT_PUBLIC_ADMIN_ENABLED=1 時顯示管理列
   const showAdmin = process.env.NEXT_PUBLIC_ADMIN_ENABLED === "1" || process.env.NEXT_PUBLIC_VERCEL_ENV !== "production"
 
   return (
     <>
       <AdminBar enabled={showAdmin} />
-      <main className="grid gap-4 pt-10"> {/* 上方 admin 列高度預留 */}
-        {/* 頂部狀態與付費選擇 */}
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              <div className="font-semibold text-slate-800">
-                {isPro ? "專業版：已解鎖" : "目前：免費版（每日 3 次）"}
-              </div>
-              {!isPro && <div className="text-xs text-slate-500 mt-1">升級可解鎖：無限對話、更多模板、之後加入提案 PDF/PPT 與私人知識庫</div>}
-            </div>
-            {!isPro && (
-              <div className="flex items-center gap-2">
-                <select value={method} onChange={(e) => setMethod(e.target.value as PayMethod)} className="rounded-lg border px-2 py-1 text-sm">
-                  <option value="Credit">信用卡</option>
-                  <option value="CVS">超商代碼</option>
-                  <option value="ATM">ATM 轉帳</option>
-                </select>
-                <button onClick={upgrade} className="rounded-lg bg-amber-600 px-3 py-1.5 text-white text-sm hover:bg-amber-700">
-                  升級專業版（ECPay）
-                </button>
-              </div>
-            )}
+      <main className="max-w-6xl mx-auto pt-10 p-4 sm:p-6 space-y-4">
+        {/* Header */}
+        <header className="card px-5 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-lg sm:text-xl font-semibold">AI Copilot Pro｜永傳家族傳承教練</h1>
+            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+              {isPro ? "專業版：無限對話與進階模板。" : "目前：免費版（每日 3 次）。升級解鎖無限對話、更多模板、未來 PDF/PPT 匯出與私人知識庫。"}
+            </p>
           </div>
+          {!isPro && (
+            <div className="flex items-center gap-2">
+              <select
+                value={method}
+                onChange={(e) => setMethod(e.target.value as PayMethod)}
+                className="rounded-lg border px-2 py-1 text-sm"
+              >
+                <option value="Credit">信用卡</option>
+                <option value="CVS">超商代碼</option>
+                <option value="ATM">ATM 轉帳</option>
+              </select>
+              <button onClick={upgrade} className="rounded-lg bg-brand-600 px-3 py-2 text-white text-sm hover:bg-brand-700 shadow">
+                升級專業版（ECPay）
+              </button>
+            </div>
+          )}
+        </header>
 
-          {!isPro && merchantTradeNo && (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-              <div className="font-medium">訂單編號：{merchantTradeNo}</div>
+        {/* 取號資訊 */}
+        {!isPro && merchantTradeNo && (
+          <section className="card px-5 py-4">
+            <div className="text-sm">
+              <div className="font-medium">訂單編號：<span className="font-mono">{merchantTradeNo}</span></div>
               {method === "CVS" && cvsPaymentNo && <div className="mt-1">超商繳費代碼：<span className="font-mono">{cvsPaymentNo}</span></div>}
               {method === "ATM" && (atmBank || atmAccount) && (
                 <div className="mt-1">銀行代碼：<span className="font-mono">{atmBank}</span>；虛擬帳號：<span className="font-mono">{atmAccount}</span></div>
               )}
               {expireDate && <div className="mt-1 text-xs text-slate-600">繳費期限：{expireDate}</div>}
               <div className="mt-3 flex items-center gap-2">
-                <button onClick={redeem} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-100">我已完成付款，解鎖專業版</button>
+                <button onClick={redeem} className="rounded-lg border px-3 py-1.5 text-sm hover:bg-slate-100">
+                  我已完成付款，解鎖專業版
+                </button>
                 <span className="text-xs text-slate-500">（系統會向綠界查詢入帳狀態）</span>
               </div>
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
-        {/* 情境模板區 */}
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between mb-2">
+        {/* 情境模板 */}
+        <section className="card px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-700">情境模板</h2>
             <span className="text-xs text-slate-500">免費可用；專業版支援更多模板與自訂</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {templates.map(t => (
-              <button key={t.id} onClick={() => runTemplate(t.id)} className="text-left rounded-xl border border-slate-200 bg-slate-50 p-3 hover:bg-slate-100">
+              <button
+                key={t.id}
+                onClick={() => runTemplate(t.id)}
+                className="text-left rounded-xl border border-slate-200 bg-slate-50 p-3 hover:bg-slate-100 transition shadow-sm"
+              >
                 <div className="text-sm font-medium">{t.title}</div>
                 {t.subtitle && <div className="text-xs text-slate-600 mt-1">{t.subtitle}</div>}
-                <div className="text-[11px] text-slate-500 mt-2">一鍵產出話術／會議大綱／風險提醒</div>
+                <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
+                  <span className="inline-block rounded-full bg-slate-200 text-slate-700 px-2 py-0.5">一鍵產出</span>
+                  <span>話術／會議大綱／風險提醒</span>
+                </div>
               </button>
             ))}
           </div>
+
           <div className="mt-3 flex flex-wrap gap-2">
             {quickActions.map(q => (
-              <button key={q.id} onClick={() => runQuick(q.prompt)} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs hover:bg-slate-100">
+              <button
+                key={q.id}
+                onClick={() => runQuick(q.prompt)}
+                className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs hover:bg-slate-100 shadow-sm"
+              >
                 {q.label}
               </button>
             ))}
           </div>
         </section>
 
-        {/* 對話訊息區 */}
-        <div ref={listRef} className="rounded-2xl bg-white p-4 shadow-sm h-[52vh] overflow-y-auto">
-          {messages.map((m, i) => (
-            <div key={i} className={`mb-3 ${m.role === "user" ? "text-right" : ""}`}>
-              <div className={`inline-block rounded-xl px-3 py-2 ${m.role === "user" ? "bg-sky-600 text-white" : "bg-slate-100"}`}>
-                {m.content}
-              </div>
-            </div>
-          ))}
-          {loading && <div className="text-sm text-slate-500">思考中…</div>}
-        </div>
+        {/* 對話區 */}
+        <section className="card px-5 py-4">
+          <div ref={listRef} className="h-[56vh] overflow-y-auto pr-1">
+            {messages.map((m, i) => (
+              <MessageBubble key={i} role={m.role} content={m.content} />
+            ))}
+            {loading && <div className="text-sm text-slate-500">思考中…</div>}
+          </div>
 
-        {/* 輸入區 */}
-        <div className="flex gap-2">
-          <input
-            value={input} onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && onSend()}
-            placeholder="也可以直接輸入你的客戶情境與需求"
-            className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
-          <button onClick={onSend} disabled={loading} className="rounded-xl bg-sky-600 px-4 py-2 text-white hover:bg-sky-700 disabled:opacity-50">
-            送出
-          </button>
-        </div>
+          {/* 輸入區：多行自動撐高 */}
+          <div className="mt-3 flex items-end gap-2">
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  onSend()
+                }
+              }}
+              rows={1}
+              placeholder="輸入你的客戶情境與需求（Shift+Enter 換行，Enter 送出）"
+              className={clsx(
+                "flex-1 rounded-2xl border border-slate-300 bg-white px-3 py-2",
+                "focus:outline-none focus:ring-2 focus:ring-brand-500",
+                "resize-none"
+              )}
+              style={{ height: "auto" }}
+            />
+            <button
+              onClick={onSend}
+              disabled={loading}
+              className="rounded-2xl bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-50 shadow"
+            >
+              送出
+            </button>
+          </div>
+        </section>
 
-        <p className="text-xs text-slate-500">免費方案：每日 3 次互動。升級後可解鎖更多模板、提案 PDF/PPT 匯出與私人知識庫。</p>
+        <p className="text-xs text-slate-500 text-center">
+          免費方案：每日 3 次互動。升級後可解鎖更多模板、提案 PDF/PPT 匯出與私人知識庫。
+        </p>
       </main>
     </>
   )

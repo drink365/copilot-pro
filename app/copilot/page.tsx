@@ -1,5 +1,5 @@
 // app/copilot/page.tsx
-export const dynamic = "force-dynamic"  // 禁止 SSG，避免預渲染階段進到 unified
+export const dynamic = "force-dynamic" // ✅ 禁止 SSG，避免預渲染時跑到 unified/remark
 "use client"
 
 import { useEffect, useRef, useState } from "react"
@@ -28,6 +28,7 @@ export default function CopilotPage() {
   const listRef = useRef<HTMLDivElement>(null)
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }) }, [messages])
 
+  // Admin 快捷解鎖 + 綠界回跳處理
   useEffect(() => {
     const u = new URL(window.location.href)
     const rtn = u.searchParams.get("RtnCode")

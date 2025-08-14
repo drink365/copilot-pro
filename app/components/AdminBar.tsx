@@ -3,18 +3,12 @@
 
 import { useEffect, useState } from "react"
 
-type Props = {
-  // 是否顯示（例如只在非 production 或用環境變數控制）
-  enabled?: boolean
-}
-
-export default function AdminBar({ enabled = false }: Props) {
+export default function AdminBar({ enabled = false }: { enabled?: boolean }) {
   const [key, setKey] = useState("")
   const [isPro, setIsPro] = useState<boolean | null>(null)
   const [msg, setMsg] = useState<string>("")
 
   useEffect(() => {
-    // 從 localStorage 帶入既有 key，避免每次重打
     const k = localStorage.getItem("ADMIN_SECRET") || ""
     setKey(k)
     refresh()
@@ -40,7 +34,7 @@ export default function AdminBar({ enabled = false }: Props) {
       if (d.ok) {
         localStorage.setItem("ADMIN_SECRET", key)
         await refresh()
-        setMsg(mode === "on" ? "已解鎖專業版（此瀏覽器）" : "已還原為免費版（此瀏覽器）")
+        setMsg(mode === "on" ? "已解鎖 Pro（此瀏覽器）" : "已還原為免費（此瀏覽器）")
       } else {
         setMsg(d.error || "操作失敗")
       }
@@ -52,16 +46,16 @@ export default function AdminBar({ enabled = false }: Props) {
   if (!enabled) return null
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50 bg-amber-50 border-b border-amber-200 text-amber-900">
-      <div className="mx-auto max-w-5xl px-3 py-2 flex items-center gap-2 text-sm">
+    <div className="fixed inset-x-0 top-0 z-50 bg-amber-50/95 backdrop-blur border-b border-amber-200 text-amber-900">
+      <div className="mx-auto max-w-6xl px-3 py-2 flex items-center gap-2 text-sm">
         <span className="font-semibold">Admin</span>
-        <span className="text-xs text-amber-700">（僅預覽/測試使用，使用 Cookie 切換此瀏覽器的 Pro 狀態）</span>
+        <span className="text-xs text-amber-700">（僅測試用）</span>
         <div className="flex items-center gap-2 ml-auto">
           <input
             value={key}
             onChange={e => setKey(e.target.value)}
             placeholder="輸入 ADMIN_SECRET"
-            className="rounded border border-amber-300 bg-white px-2 py-1 text-xs min-w-[240px]"
+            className="rounded border border-amber-300 bg-white px-2 py-1 text-xs min-w-[240px] shadow-sm"
           />
           <button onClick={() => toggle("on")} className="rounded bg-amber-600 text-white px-2 py-1 text-xs hover:bg-amber-700">
             解鎖 Pro

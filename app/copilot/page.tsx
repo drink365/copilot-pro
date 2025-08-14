@@ -1,4 +1,5 @@
 // app/copilot/page.tsx
+export const dynamic = "force-dynamic"  // ✅ 加在檔案最頂端
 "use client"
 
 import { useEffect, useRef, useState } from "react"

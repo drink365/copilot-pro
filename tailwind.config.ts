@@ -3,8 +3,9 @@ import type { Config } from "tailwindcss"
 
 const config: Config = {
   content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}"
   ],
   theme: {
     extend: {
@@ -24,13 +25,9 @@ const config: Config = {
       },
       boxShadow: {
         soft: "0 4px 14px rgba(15,23,42,0.08)"
-      },
-      borderRadius: {
-        xl2: "1rem",
-        xl3: "1.25rem"
       }
     }
   },
-  plugins: [require("@tailwindcss/typography")],
+  plugins: [require("@tailwindcss/typography")] // ← 一定要有
 }
 export default config

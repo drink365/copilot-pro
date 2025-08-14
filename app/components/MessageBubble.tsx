@@ -4,10 +4,9 @@
 import React from "react"
 import dynamic from "next/dynamic"
 
-// ✅ 動態載入 MarkdownRenderer，並關閉 SSR（只在瀏覽器渲染）
+// 只在瀏覽器載入 MarkdownRenderer，伺服器階段不碰 unified
 const MarkdownRenderer = dynamic(() => import("./MarkdownRenderer"), { ssr: false })
 
-// 簡易 class 合併（避免額外相依）
 function cx(...args: Array<string | false | null | undefined>) {
   return args.filter(Boolean).join(" ")
 }

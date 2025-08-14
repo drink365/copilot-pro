@@ -4,9 +4,10 @@
 import React from "react"
 import dynamic from "next/dynamic"
 
-// 只在瀏覽器載入 MarkdownRenderer，伺服器階段不碰 unified
+// ✅ 僅在瀏覽器載入 MarkdownRenderer，避免伺服器預渲染時觸發 unified/remark
 const MarkdownRenderer = dynamic(() => import("./MarkdownRenderer"), { ssr: false })
 
+// 輕量 class 合併（免安裝 classnames）
 function cx(...args: Array<string | false | null | undefined>) {
   return args.filter(Boolean).join(" ")
 }
@@ -18,6 +19,7 @@ type Props = {
 
 export default function MessageBubble({ role, content }: Props) {
   const isUser = role === "user"
+
   return (
     <div className={cx("mb-3", isUser && "text-right")}>
       <div

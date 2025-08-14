@@ -3,10 +3,7 @@
 
 import * as React from "react"
 import ReactMarkdown from "react-markdown"
-// 有些專案的 TS 會對 remark-gfm 型別嚴格，這裡用 as any 保證可編譯
-// 若你沒開嚴格模式，去掉 "as any" 也可以正常使用
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const remarkGfm = require("remark-gfm") as any
+import remarkGfm from "remark-gfm" // ← 用 ESM default import，確保是函式
 
 type Props = { content: string }
 
@@ -14,8 +11,7 @@ export default function MarkdownRenderer({ content }: Props) {
   return (
     <div className="prose prose-sm sm:prose-base max-w-none">
       <ReactMarkdown
-        // @ts-expect-error: remark-gfm 型別在某些 TS 設定下會標紅，實際可正常執行
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm]} // ← 傳入函式本體
         components={{
           a: (props) => <a {...props} target="_blank" rel="noreferrer" />,
           table: (props) => (

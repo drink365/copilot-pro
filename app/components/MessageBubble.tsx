@@ -1,10 +1,13 @@
 // app/components/MessageBubble.tsx
 "use client"
 
-import MarkdownRenderer from "./MarkdownRenderer"
 import React from "react"
+import dynamic from "next/dynamic"
 
-// 輕量 class 合併，避免外部相依
+// ✅ 動態載入 MarkdownRenderer，並關閉 SSR（只在瀏覽器渲染）
+const MarkdownRenderer = dynamic(() => import("./MarkdownRenderer"), { ssr: false })
+
+// 簡易 class 合併（避免額外相依）
 function cx(...args: Array<string | false | null | undefined>) {
   return args.filter(Boolean).join(" ")
 }
@@ -16,7 +19,6 @@ type Props = {
 
 export default function MessageBubble({ role, content }: Props) {
   const isUser = role === "user"
-
   return (
     <div className={cx("mb-3", isUser && "text-right")}>
       <div
@@ -26,10 +28,8 @@ export default function MessageBubble({ role, content }: Props) {
         )}
       >
         {isUser ? (
-          // 使用者訊息：保留換行、避免超長字串溢出
           <div className="whitespace-pre-wrap break-words">{content}</div>
         ) : (
-          // 助理訊息：用 Markdown 漂亮渲染
           <MarkdownRenderer content={content} />
         )}
       </div>

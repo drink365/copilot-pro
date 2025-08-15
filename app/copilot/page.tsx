@@ -1,4 +1,3 @@
-// app/copilot/page.tsx
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
@@ -10,7 +9,6 @@ export default function CopilotPage() {
   const [loading, setLoading] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // 自動滾到底
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })
   }, [messages])
@@ -19,7 +17,6 @@ export default function CopilotPage() {
     const content = input.trim()
     if (!content || loading) return
 
-    // 先加入使用者訊息
     const userMsg: ChatMessage = { role: "user", content, createdAt: Date.now() }
     setMessages(prev => [...prev, userMsg])
     setInput("")
@@ -58,17 +55,14 @@ export default function CopilotPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-6 space-y-4">
+    <main className="space-y-4">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">家族傳承 Copilot</h1>
       </header>
 
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-4">
         <div ref={listRef} className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-          {messages.map((m, idx) => (
-            // ✅ 這裡改成傳「message」而不是 role/content
-            <MessageBubble key={idx} message={m} />
-          ))}
+          {messages.map((m, idx) => (<MessageBubble key={idx} message={m} />))}
           {messages.length === 0 && (
             <div className="text-sm text-slate-500">
               嗨！可以直接輸入：<br />
@@ -85,13 +79,13 @@ export default function CopilotPage() {
             value={input}
             onChange={e => setInput(e.target.value)}
             placeholder="請輸入你的問題（例如：遺產 8000 萬怎麼試算？）"
-            className="flex-1 rounded-xl border-slate-300 focus:ring-2 focus:ring-sky-500"
+            className="flex-1 rounded-xl border-slate-300 focus:ring-2 focus:ring-[var(--brand-red)]"
             disabled={loading}
           />
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="px-4 py-2 rounded-xl bg-sky-600 text-white disabled:opacity-50"
+            className="btn-primary px-4 py-2 rounded-xl text-white disabled:opacity-50"
           >
             {loading ? "傳送中…" : "送出"}
           </button>

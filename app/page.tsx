@@ -18,6 +18,7 @@ export default function Home() {
               <Link href="/tools/estate" className="px-5 py-3 rounded-xl border hover:bg-gray-50">🏛️ 遺產稅試算</Link>
               <Link href="/tools/gift" className="px-5 py-3 rounded-xl border hover:bg-gray-50">🎁 贈與稅試算</Link>
               <Link href="/book" className="px-5 py-3 rounded-xl border hover:bg-gray-50">📅 線上預約</Link>
+              <Link href="/pro/login" className="px-5 py-3 rounded-xl border hover:bg-gray-50">🔐 顧問登入</Link>
 
             </div>
             <p className="text-sm text-gray-500">

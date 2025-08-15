@@ -1,4 +1,3 @@
-// app/api/dev/pro/route.ts
 import { NextRequest, NextResponse } from "next/server"
 import { setUserPlan } from "@/lib/entitlements"
 
@@ -17,7 +16,5 @@ export async function GET(req: NextRequest) {
   }
 
   await setUserPlan(plan)
-
-  const res = NextResponse.json({ ok: true, plan })
-  return res
+  return NextResponse.json({ ok: true, plan })
 }

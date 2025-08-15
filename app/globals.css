@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== 品牌色（你可以微調這三個色票） ===== */
+/* ===== 品牌色 ===== */
 :root{
-  --brand-red: #C11421;   /* 永傳紅（Logo主色） */
-  --brand-gold:#B8922F;   /* 永傳金（Logo點綴） */
+  --brand-red: #C11421;   /* 永傳紅 */
+  --brand-gold:#B8922F;   /* 永傳金 */
   --brand-dark:#3E424B;   /* 深灰標題 */
 }
 
@@ -16,11 +16,8 @@ body { @apply bg-slate-50 text-slate-800; }
 a { color: var(--brand-red); }
 a:hover { opacity: .85; }
 
-/* 通用按鈕（可在 className 再疊加） */
-.btn-primary {
-  background: var(--brand-red);
-  color: #fff;
-}
+/* 通用主按鈕 */
+.btn-primary { background: var(--brand-red); color: #fff; }
 .btn-primary:hover { filter: brightness(0.95); }
 
 /* Markdown（react-markdown + remark-gfm）品牌化 */

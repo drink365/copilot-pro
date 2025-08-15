@@ -1,4 +1,3 @@
-// app/components/MarkdownRenderer.tsx
 "use client"
 
 import React from "react"

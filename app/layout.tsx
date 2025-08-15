@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import BrandHeader from "./components/BrandHeader"
-import AdminBar from "./components/AdminBar"
 
 export const metadata: Metadata = {
   title: "永傳家族辦公室｜家族傳承 Copilot",
@@ -13,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-Hant">
       <body className="bg-slate-50 text-slate-800">
         <BrandHeader />
-        <AdminBar />
+  
         <main className="mx-auto max-w-5xl px-4 py-6">
           {children}
         </main>

@@ -25,7 +25,9 @@ export default function CopilotPage() {
   const [expireDate, setExpireDate] = useState<string>("")
 
   const listRef = useRef<HTMLDivElement>(null)
-  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }) }, [messages])
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })
+  }, [messages])
 
   // Admin 快捷解鎖 + 綠界回跳處理
   useEffect(() => {
@@ -41,9 +43,13 @@ export default function CopilotPage() {
     if (rtn === "1") {
       fetch(`/api/ecpay/verify?${u.searchParams.toString()}`)
         .then(r => r.json())
-        .then(d => { if (d.ok) { setIsPro(true); alert("升級成功！已解鎖專業版。") } else { alert(d.error || "驗證失敗") } })
+        .then(d => {
+          if (d.ok) { setIsPro(true); alert("升級成功！已解鎖專業版。") }
+          else { alert(d.error || "驗證失敗") }
+        })
         .catch(() => alert("驗證時發生錯誤"))
-      clearQuery(); return
+      clearQuery()
+      return
     }
 
     if (mtn) {
@@ -71,7 +77,8 @@ export default function CopilotPage() {
     const data = await res.json()
     if (!res.ok || !data.html) return alert(data.error || "建立金流連線失敗")
     if (data.tradeNo) setMerchantTradeNo(data.tradeNo)
-    const w = window.open("", "_blank"); if (!w) return alert("請允許彈出視窗")
+    const w = window.open("", "_blank")
+    if (!w) return alert("請允許彈出視窗")
     w.document.open(); w.document.write(data.html); w.document.close()
   }
 
@@ -99,11 +106,22 @@ export default function CopilotPage() {
       if (typeof data.isPro === "boolean") setIsPro(!!data.isPro)
     } catch (e: any) {
       setMessages(prev => [...prev, { role: "assistant", content: `⚠️ ${e.message}` }])
-    } finally { setLoading(false) }
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const onSend = async () => { const c = input.trim(); if (!c) return; setInput(""); await send(c) }
-  const runTemplate = async (id: string) => { const t = templates.find(x => x.id === id); if (!t) return; await send(t.prompt()) }
+  const onSend = async () => {
+    const c = input.trim()
+    if (!c) return
+    setInput("")
+    await send(c)
+  }
+  const runTemplate = async (id: string) => {
+    const t = templates.find(x => x.id === id)
+    if (!t) return
+    await send(t.prompt())
+  }
   const runQuick = async (p: string) => { await send(p) }
 
   const showAdmin = process.env.NEXT_PUBLIC_ADMIN_ENABLED === "1" || process.env.NEXT_PUBLIC_VERCEL_ENV !== "production"
@@ -152,14 +170,14 @@ export default function CopilotPage() {
         )}
 
         {/* 情境模板 */}
-        <section className="bg白 rounded-2xl border border-slate-200 shadow-soft px-5 py-4">
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-soft px-5 py-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-700">情境模板</h2>
             <span className="text-xs text-slate-500">免費可用；專業版支援更多模板與自訂</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {templates.map(t => (
-              <button key={t.id} onClick={() => runTemplate(t.id)} className="text-left rounded-xl border border-slate-200 bg-slate-50 p-3 hover:bg-slate-100 transition shadow-sm">
+              <button key={t.id} onClick={() => runTemplate(t.id)} className="text左 rounded-xl border border-slate-200 bg-slate-50 p-3 hover:bg-slate-100 transition shadow-sm">
                 <div className="text-sm font-medium">{t.title}</div>
                 {t.subtitle && <div className="text-xs text-slate-600 mt-1">{t.subtitle}</div>}
                 <div className="mt-2 flex items-center gap-1 text-[11px] text-slate-500">
@@ -188,7 +206,7 @@ export default function CopilotPage() {
               className="flex-1 rounded-2xl border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
               style={{ height: "auto" }}
             />
-            <button onClick={onSend} disabled={loading} className="rounded-2xl bg-brand-600 px-4 py-2 text白 hover:bg-brand-700 disabled:opacity-50 shadow">
+            <button onClick={onSend} disabled={loading} className="rounded-2xl bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-50 shadow">
               送出
             </button>
           </div>

@@ -9,16 +9,11 @@ function roughNumberIn(text: string): number | null {
   const m = text.replace(/[,，]/g, "").match(/([0-9]+(?:\.[0-9]+)?)/)
   return m ? Number(m[1]) : null
 }
-
-function hasAny(s: string, keys: string[]) {
-  return keys.some(k => s.includes(k))
-}
+function hasAny(s: string, keys: string[]) { return keys.some(k => s.includes(k)) }
 
 function buildFactsBlock(content: string) {
   const facts = resolveTaxFacts(content)
-  if (facts && (facts as any).found) {
-    return `\n\n---\n${(facts as any).factsText}`
-  }
+  if (facts && (facts as any).found) return `\n\n---\n${(facts as any).factsText}`
   return ""
 }
 
@@ -26,14 +21,8 @@ function buildEstateBlock(amount: number) {
   const r = estimateEstateTW({
     jurisdiction: "TW",
     gross_estate: amount,
-    debts: 0,
-    funeral_expense: 0,
-    life_insurance_payout: 0,
-    spouse_count: 0,
-    lineal_descendants: 0,
-    lineal_ascendants: 0,
-    disabled_count: 0,
-    other_dependents: 0
+    debts: 0, funeral_expense: 0, life_insurance_payout: 0,
+    spouse_count: 0, lineal_descendants: 0, lineal_ascendants: 0, disabled_count: 0, other_dependents: 0
   })
   return `【系統試算（僅依題句抓到的總額示意）】
 - 遺產總額：${r.inputs.gross_estate.toLocaleString()} ${r.currency}
@@ -113,10 +102,7 @@ export async function POST(req: NextRequest) {
     const factsBlock = buildFactsBlock(content)
     const reply = makeHeuristicReply(content, factsBlock)
 
-    return NextResponse.json({
-      reply,
-      isPro: getUserPlan() !== "free"
-    })
+    return NextResponse.json({ reply, isPro: getUserPlan() !== "free" })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "未知錯誤" }, { status: 500 })
   }

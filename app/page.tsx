@@ -17,6 +17,8 @@ export default function Home() {
               <Link href="/tools/compare" className="px-5 py-3 rounded-xl bg-black text-white hover:opacity-90">📊 3 方案比較</Link>
               <Link href="/tools/estate" className="px-5 py-3 rounded-xl border hover:bg-gray-50">🏛️ 遺產稅試算</Link>
               <Link href="/tools/gift" className="px-5 py-3 rounded-xl border hover:bg-gray-50">🎁 贈與稅試算</Link>
+              <Link href="/book" className="px-5 py-3 rounded-xl border hover:bg-gray-50">📅 線上預約</Link>
+
             </div>
             <p className="text-sm text-gray-500">
               專業提醒：本平台提供「粗估與引導」，實際申報須依申報時點法令、資產價值與身分條件計算。

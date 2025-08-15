@@ -1,7 +1,9 @@
 // app/api/ecpay/checkout/route.ts
 import { NextRequest, NextResponse } from "next/server"
+import { ecpayEndpoint, genCheckMacValue, getConfig, genTradeNo } from "../_lib"
 
-// 範例：回傳一段提交到 ECPay 的 HTML 表單（實務需帶入商店參數與 CheckMacValue）
+export const runtime = "nodejs"
+
 type PayMethod = "Credit" | "CVS" | "ATM"
 type Period = "monthly" | "yearly"
 type PlanId = "pro" | "pro_plus"
@@ -13,30 +15,45 @@ const PRICES_TWD: Record<PlanId, Record<Period, number>> = {
 
 export async function POST(req: NextRequest) {
   try {
+    const cfg = getConfig()
     const body = await req.json()
     const method: PayMethod = (body?.method || "Credit")
     const plan: PlanId = (body?.plan || "pro")
     const period: Period = (body?.period || "monthly")
     const amt = PRICES_TWD[plan][period]
 
-    const html = `<!doctype html><html><body>
-  <form id="f" method="post" action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5">
-    <input type="hidden" name="MerchantID" value="PLEASE_SET" />
-    <input type="hidden" name="MerchantTradeNo" value="${Date.now()}" />
-    <input type="hidden" name="MerchantTradeDate" value="${new Date().toISOString().slice(0,19).replace('T',' ')}" />
-    <input type="hidden" name="PaymentType" value="aio" />
-    <input type="hidden" name="TotalAmount" value="${amt}" />
-    <input type="hidden" name="TradeDesc" value="Copilot Pro" />
-    <input type="hidden" name="ItemName" value="${plan.toUpperCase()}-${period}" />
-    <input type="hidden" name="ChoosePayment" value="${method}" />
-    <!-- 你需要補上 ReturnURL / ClientBackURL / CheckMacValue 等 -->
-    <noscript><button type="submit">Continue</button></noscript>
-  </form>
-  <script>document.getElementById("f").submit()</script>
-</body></html>`
+    const MerchantTradeNo = genTradeNo(plan === "pro" ? "PRO" : "PRP")
+    const MerchantTradeDate = new Date().toISOString().slice(0, 19).replace("T", " ")
 
-    return NextResponse.json({ html })
+    const basePairs: Record<string, string> = {
+      MerchantID: cfg.merchantId,
+      MerchantTradeNo,
+      MerchantTradeDate,
+      PaymentType: "aio",
+      TotalAmount: String(amt),
+      TradeDesc: `Copilot ${plan} ${period}`,
+      ItemName: `Copilot ${plan} ${period}`,
+      ReturnURL: `${cfg.siteUrl}/api/ecpay/notify`,
+      ChoosePayment: method,
+      ClientBackURL: `${cfg.siteUrl}/pricing?done=1`,
+      OrderResultURL: `${cfg.siteUrl}/api/ecpay/verify`, // 付款完成頁（可改成你的成功頁）
+      EncryptType: "1",
+    }
+
+    const CheckMacValue = genCheckMacValue(basePairs, cfg.hashKey, cfg.hashIV)
+    const action = ecpayEndpoint(cfg.mode)
+
+    const html = `<!doctype html><html><body>
+      <form id="f" method="post" action="${action}">
+        ${Object.entries({ ...basePairs, CheckMacValue })
+          .map(([k, v]) => `<input type="hidden" name="${k}" value="${String(v)}" />`)
+          .join("\n")}
+      </form>
+      <script>document.getElementById('f').submit()</script>
+    </body></html>`
+
+    return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8" } })
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "建立訂單失敗" }, { status: 500 })
+    return NextResponse.json({ ok: false, error: e?.message || "未知錯誤" }, { status: 500 })
   }
 }

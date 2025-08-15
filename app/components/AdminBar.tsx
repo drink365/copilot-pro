@@ -1,75 +1,76 @@
 // app/components/AdminBar.tsx
 "use client"
 
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 
-export default function AdminBar({ enabled = true }: { enabled?: boolean }) {
-  const [key, setKey] = useState("")
-  const [isPro, setIsPro] = useState<boolean | null>(null)
+type Plan = "free" | "pro" | "pro_plus"
+
+export default function AdminBar() {
+  const [secret, setSecret] = useState("")
+  const [plan, setPlan] = useState<Plan>("free")
   const [msg, setMsg] = useState<string>("")
 
-  async function refresh() {
+  async function refreshPlan() {
     try {
-      const r = await fetch("/api/debug")
-      const d = await r.json()
-      setIsPro(!!d.isPro || d.plan === "pro" || d.plan === "pro_plus")
+      const res = await fetch("/api/debug", { cache: "no-store" })
+      const j = await res.json()
+      if (j?.plan) setPlan(j.plan as Plan)
     } catch {
-      setIsPro(null)
+      // ignore
     }
   }
 
   useEffect(() => {
-    const k = localStorage.getItem("ADMIN_SECRET") || ""
-    setKey(k)
-    refresh()
+    refreshPlan()
   }, [])
 
-  if (!enabled) return null
-
-  async function toggle(mode: "on" | "off") {
+  async function switchPlan(next: Plan) {
     setMsg("")
     try {
-      const u = new URL("/api/dev/pro", window.location.origin)
-      u.searchParams.set("key", key)
-      u.searchParams.set("mode", mode)
-      const r = await fetch(u.toString())
-      const d = await r.json()
-      if (!r.ok) throw new Error(d?.error || "failed")
-      setMsg(mode === "on" ? "已解鎖 Pro（30 天）" : "已還原免費")
-      await refresh()
+      const url = `/api/dev/pro?secret=${encodeURIComponent(secret)}&plan=${encodeURIComponent(next)}`
+      const res = await fetch(url, { method: "GET" })
+      const j = await res.json()
+      if (!res.ok || !j?.ok) {
+        setMsg(j?.error || `切換失敗（${res.status}）`)
+      } else {
+        setMsg(`已切換為：${next}`)
+        await refreshPlan()
+      }
     } catch (e: any) {
-      setMsg(`錯誤：${e.message}`)
+      setMsg(e?.message || "發生錯誤")
     }
   }
 
+  // 你也可以只在開發或登入管理者時顯示；這裡先固定顯示，方便示範
   return (
-    <div className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200">
-      <div className="mx-auto max-w-5xl flex items-center justify-between px-4 py-2">
-        <div className="text-xs text-amber-800">
-          管理員模式：輸入 ADMIN_SECRET 可快速切換 Free/Pro 狀態（本機 cookie）。
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            className="rounded border border-amber-400 px-2 py-1 text-xs"
-            placeholder="ADMIN_SECRET"
-            value={key}
-            onChange={(e) => {
-              setKey(e.target.value)
-              localStorage.setItem("ADMIN_SECRET", e.target.value)
-            }}
-          />
-          <button onClick={() => toggle("on")} className="rounded bg-amber-600 text-white px-2 py-1 text-xs hover:bg-amber-700">
-            解鎖 Pro
-          </button>
-          <button onClick={() => toggle("off")} className="rounded border border-amber-400 px-2 py-1 text-xs hover:bg-amber-100">
-            還原免費
-          </button>
-          <span className="text-xs ml-2">
-            狀態：{isPro === null ? "未知" : isPro ? "已是 Pro" : "免費"}
-          </span>
-          {msg && <span className="text-xs ml-2 text-amber-700">{msg}</span>}
-        </div>
-      </div>
+    <div className="fixed z-50 top-3 right-3 bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow p-3 flex items-center gap-2 text-sm">
+      <span className="px-2 py-1 rounded-full border bg-slate-50 text-slate-700">
+        目前方案：<b className={plan === "free" ? "text-slate-700" : "text-sky-600"}>{plan}</b>
+      </span>
+
+      <input
+        type="password"
+        value={secret}
+        onChange={(e) => setSecret(e.target.value)}
+        placeholder="輸入 ADMIN_SECRET"
+        className="w-44 rounded-lg border border-slate-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500"
+      />
+
+      <button
+        onClick={() => switchPlan("pro")}
+        className="rounded-lg px-3 py-1 bg-sky-600 text-white hover:bg-sky-700"
+      >
+        切換 Pro
+      </button>
+
+      <button
+        onClick={() => switchPlan("free")}
+        className="rounded-lg px-3 py-1 border border-slate-300 hover:bg-slate-50"
+      >
+        切回 Free
+      </button>
+
+      {msg ? <span className="ml-1 text-slate-500">{msg}</span> : null}
     </div>
   )
 }

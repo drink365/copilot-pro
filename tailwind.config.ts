@@ -6,14 +6,11 @@ const config: Config = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}"
   ],
-  theme: {
-    extend: {}
-  },
+  theme: { extend: {} },
   plugins: [
     require("@tailwindcss/forms"),
     require("@tailwindcss/typography"),
     require("tailwindcss-animate")
   ]
 }
-
 export default config

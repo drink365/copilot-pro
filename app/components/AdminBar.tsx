@@ -1,14 +1,15 @@
-// app/components/AdminBar.tsx
 "use client"
 
 import React, { useEffect, useState } from "react"
 
 type Plan = "free" | "pro" | "pro_plus"
 
-export default function AdminBar() {
+export default function AdminBar({ userEmail }: { userEmail: string | null }) {
   const [secret, setSecret] = useState("")
   const [plan, setPlan] = useState<Plan>("free")
   const [msg, setMsg] = useState<string>("")
+
+  const allowedAdmins = ["123@par.tw", "drink365@gmail.com"]
 
   async function refreshPlan() {
     try {
@@ -41,7 +42,11 @@ export default function AdminBar() {
     }
   }
 
-  // 你也可以只在開發或登入管理者時顯示；這裡先固定顯示，方便示範
+  // 沒有登入或不是管理員 → 不顯示
+  if (!userEmail || !allowedAdmins.includes(userEmail)) {
+    return null
+  }
+
   return (
     <div className="fixed z-50 top-3 right-3 bg-white/90 backdrop-blur rounded-2xl border border-slate-200 shadow p-3 flex items-center gap-2 text-sm">
       <span className="px-2 py-1 rounded-full border bg-slate-50 text-slate-700">

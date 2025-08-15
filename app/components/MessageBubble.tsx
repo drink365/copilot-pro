@@ -1,4 +1,3 @@
-// app/components/MessageBubble.tsx
 "use client"
 
 import React, { useState } from "react"
@@ -22,10 +21,9 @@ export default function MessageBubble({ message }: Props) {
   const isAssistant = message.role === "assistant"
   const [copied, setCopied] = useState(false)
 
-  const timeLabel =
-    message.createdAt
-      ? new Date(message.createdAt).toLocaleString()
-      : ""
+  const timeLabel = message.createdAt
+    ? new Date(message.createdAt).toLocaleString()
+    : ""
 
   async function onCopy() {
     try {
@@ -45,11 +43,12 @@ export default function MessageBubble({ message }: Props) {
         "py-2"
       ].join(" ")}
     >
-      {/* avatar */}
       <div
         className={[
           "shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold",
-          isUser ? "bg-blue-600 text-white order-2" : "bg-neutral-200 text-neutral-700 order-1"
+          isUser
+            ? "bg-blue-600 text-white order-2"
+            : "bg-neutral-200 text-neutral-700 order-1"
         ].join(" ")}
         aria-hidden
         title={isUser ? "You" : isAssistant ? "Assistant" : "System"}
@@ -57,7 +56,6 @@ export default function MessageBubble({ message }: Props) {
         {isUser ? "Me" : "AI"}
       </div>
 
-      {/* bubble */}
       <div
         className={[
           "max-w-[88%] md:max-w-[75%] lg:max-w-[65%]",
@@ -67,25 +65,20 @@ export default function MessageBubble({ message }: Props) {
             : "bg-white text-neutral-900 border border-neutral-200 order-2"
         ].join(" ")}
       >
-        {/* 內容（Markdown） */}
         <MarkdownRenderer
           content={message.content || ""}
           className={[
             "prose max-w-none prose-sm sm:prose-base",
-            // 讓長網址、長字串能優雅折行
             "break-words whitespace-pre-wrap",
             isUser ? "prose-invert" : ""
           ].join(" ")}
         />
-
-        {/* footer：時間＋複製 */}
         <div className="mt-2 flex items-center justify-end gap-2 text-[11px]">
-          {timeLabel ? (
+          {timeLabel && (
             <span className={isUser ? "text-white/80" : "text-neutral-500"}>
               {timeLabel}
             </span>
-          ) : null}
-
+          )}
           <button
             type="button"
             onClick={onCopy}

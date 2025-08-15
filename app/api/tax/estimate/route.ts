@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
         lineal_descendants: Number(payload.lineal_descendants || 0),
         lineal_ascendants: Number(payload.lineal_ascendants || 0),
         disabled_count: Number(payload.disabled_count || 0),
+        other_dependents: Number(payload.other_dependents || 0),
       });
       return NextResponse.json({ ok: true, result: r });
     }

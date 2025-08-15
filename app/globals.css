@@ -1,16 +1,33 @@
-/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 讓背景與字色統一乾淨 */
+/* ===== 品牌色（你可以微調這三個色票） ===== */
+:root{
+  --brand-red: #C11421;   /* 永傳紅（Logo主色） */
+  --brand-gold:#B8922F;   /* 永傳金（Logo點綴） */
+  --brand-dark:#3E424B;   /* 深灰標題 */
+}
+
+/* 頁面底色與字色 */
 body { @apply bg-slate-50 text-slate-800; }
 
-/* Markdown（react-markdown + remark-gfm）美化 */
+/* 連結 */
+a { color: var(--brand-red); }
+a:hover { opacity: .85; }
+
+/* 通用按鈕（可在 className 再疊加） */
+.btn-primary {
+  background: var(--brand-red);
+  color: #fff;
+}
+.btn-primary:hover { filter: brightness(0.95); }
+
+/* Markdown（react-markdown + remark-gfm）品牌化 */
 .prose {
   --tw-prose-body: theme(colors.slate.800);
-  --tw-prose-headings: theme(colors.slate.900);
-  --tw-prose-links: theme(colors.sky.600);
+  --tw-prose-headings: var(--brand-dark);
+  --tw-prose-links: var(--brand-red);
   --tw-prose-bold: theme(colors.slate.900);
   --tw-prose-counters: theme(colors.slate.600);
   --tw-prose-bullets: theme(colors.slate.400);
@@ -24,6 +41,7 @@ body { @apply bg-slate-50 text-slate-800; }
   --tw-prose-th-borders: theme(colors.slate.200);
   --tw-prose-td-borders: theme(colors.slate.200);
 }
+.prose h1, .prose h2, .prose h3 { letter-spacing: .2px; }
 .prose code { @apply rounded bg-slate-200 px-1 py-0.5; }
 .prose pre { @apply rounded-xl bg-slate-900 text-slate-50 p-4 overflow-x-auto; }
 .prose pre code { @apply bg-transparent p-0; }

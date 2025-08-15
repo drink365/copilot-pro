@@ -21,7 +21,6 @@ function todayISO() {
 export function resolveTaxFacts(userText: string): ResolveResult {
   const q = userText.toLowerCase();
 
-  // 主題判斷：遺產 or 贈與（台灣）
   const askEstate = includesAny(q, ["遺產", "遺產稅", "estate"]);
   const askGift = includesAny(q, ["贈與", "贈與稅", "gift"]);
   const isTW = includesAny(q, ["台灣", "臺灣", "中華民國", "taiwan", "tw"]) || (!includesAny(q, ["us", "usa", "irs", "美國"]));
@@ -46,8 +45,12 @@ export function resolveTaxFacts(userText: string): ResolveResult {
     lines.push(`- 基本免稅：${Number(B.basic || 0).toLocaleString()}`);
     if (B.spouse_deduction) lines.push(`- 配偶扣除：${Number(B.spouse_deduction).toLocaleString()}`);
     if (B.lineal_descendant_deduction_per_person) lines.push(`- 直系卑親屬每人：${Number(B.lineal_descendant_deduction_per_person).toLocaleString()}`);
-    if (B.lineal_ascendant_deduction_per_person) lines.push(`- 直系尊親屬每人：${Number(B.lineal_ascendant_deduction_per_person).toLocaleString()}`);
+    if (B.lineal_ascendant_deduction_per_person) {
+      const cap = B.lineal_ascendant_max_count ? `（最多 ${B.lineal_ascendant_max_count} 人）` : "";
+      lines.push(`- 直系尊親屬每人：${Number(B.lineal_ascendant_deduction_per_person).toLocaleString()}${cap}`);
+    }
     if (B.disabled_deduction_per_person) lines.push(`- 身心障礙每人：${Number(B.disabled_deduction_per_person).toLocaleString()}`);
+    if (B.other_dependents_deduction_per_person) lines.push(`- 其他撫養每人：${Number(B.other_dependents_deduction_per_person).toLocaleString()}`);
     if (O.funeral_expense_cap) lines.push(`- 喪葬費上限：${Number(O.funeral_expense_cap).toLocaleString()}`);
     if (O.life_insurance_exempt_cap) lines.push(`- 壽險給付免稅上限：${Number(O.life_insurance_exempt_cap).toLocaleString()}`);
     if (O.debts_allowable) lines.push(`- 債務得扣除：是`);

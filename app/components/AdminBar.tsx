@@ -4,26 +4,20 @@ import React, { useEffect, useState } from "react"
 
 type Plan = "free" | "pro" | "pro_plus"
 
-export default function AdminBar({ userEmail }: { userEmail: string | null }) {
+export default function AdminBar() {
   const [secret, setSecret] = useState("")
   const [plan, setPlan] = useState<Plan>("free")
   const [msg, setMsg] = useState<string>("")
-
-  const allowedAdmins = ["123@par.tw", "drink365@gmail.com"]
 
   async function refreshPlan() {
     try {
       const res = await fetch("/api/debug", { cache: "no-store" })
       const j = await res.json()
       if (j?.plan) setPlan(j.plan as Plan)
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
-  useEffect(() => {
-    refreshPlan()
-  }, [])
+  useEffect(() => { refreshPlan() }, [])
 
   async function switchPlan(next: Plan) {
     setMsg("")
@@ -31,20 +25,11 @@ export default function AdminBar({ userEmail }: { userEmail: string | null }) {
       const url = `/api/dev/pro?secret=${encodeURIComponent(secret)}&plan=${encodeURIComponent(next)}`
       const res = await fetch(url, { method: "GET" })
       const j = await res.json()
-      if (!res.ok || !j?.ok) {
-        setMsg(j?.error || `切換失敗（${res.status}）`)
-      } else {
-        setMsg(`已切換為：${next}`)
-        await refreshPlan()
-      }
+      if (!res.ok || !j?.ok) setMsg(j?.error || `切換失敗（${res.status}）`)
+      else { setMsg(`已切換為：${next}`); await refreshPlan() }
     } catch (e: any) {
       setMsg(e?.message || "發生錯誤")
     }
-  }
-
-  // 沒有登入或不是管理員 → 不顯示
-  if (!userEmail || !allowedAdmins.includes(userEmail)) {
-    return null
   }
 
   return (
@@ -61,17 +46,10 @@ export default function AdminBar({ userEmail }: { userEmail: string | null }) {
         className="w-44 rounded-lg border border-slate-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500"
       />
 
-      <button
-        onClick={() => switchPlan("pro")}
-        className="rounded-lg px-3 py-1 bg-sky-600 text-white hover:bg-sky-700"
-      >
+      <button onClick={() => switchPlan("pro")} className="rounded-lg px-3 py-1 bg-[var(--brand-red)] text-white hover:brightness-95">
         切換 Pro
       </button>
-
-      <button
-        onClick={() => switchPlan("free")}
-        className="rounded-lg px-3 py-1 border border-slate-300 hover:bg-slate-50"
-      >
+      <button onClick={() => switchPlan("free")} className="rounded-lg px-3 py-1 border border-slate-300 hover:bg-slate-50">
         切回 Free
       </button>
 

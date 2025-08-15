@@ -15,30 +15,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "缺少 MerchantTradeNo" }, { status: 400 })
   }
 
-  const payload: Record<string, string> = {
+  const pairs: Record<string, string> = {
     MerchantID: cfg.merchantId,
     MerchantTradeNo,
     TimeStamp: String(Math.floor(Date.now() / 1000))
   }
-  payload["CheckMacValue"] = genCheckMacValue(payload, cfg.hashKey, cfg.hashIV)
+  const CheckMacValue = genCheckMacValue(pairs, cfg.hashKey, cfg.hashIV)
+  const body = new URLSearchParams({ ...pairs, CheckMacValue })
 
-  const endpoint = ecpayQueryEndpoint(cfg.mode)
-  const resp = await fetch(endpoint, {
+  const res0 = await fetch(ecpayQueryEndpoint(cfg.mode), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(payload)
+    body
   })
-  const text = await resp.text()
-  if (!resp.ok) {
-    return NextResponse.json({ ok: false, error: "查詢失敗", detail: text }, { status: 500 })
-  }
+  const text = await res0.text()
 
-  // QueryTradeInfo 回應為 querystring 格式
-  const pairs = new URLSearchParams(text)
-  const TradeStatus = pairs.get("TradeStatus") // "1" 表示已付款
-  const PaymentType = pairs.get("PaymentType") || ""
-  const RtnMsg = pairs.get("RtnMsg") || ""
-  const TradeAmt = pairs.get("TradeAmt") || ""
+  const data = new URLSearchParams(text)
+  const TradeStatus = data.get("TradeStatus") // "1" 表示已付款
+  const PaymentType = data.get("PaymentType") || ""
+  const RtnMsg = data.get("RtnMsg") || ""
+  const TradeAmt = data.get("TradeAmt") || ""
 
   if (TradeStatus !== "1") {
     return NextResponse.json({ ok: false, paid: false, message: RtnMsg || "尚未入帳", paymentType: PaymentType, amount: TradeAmt })

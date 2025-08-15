@@ -2,12 +2,9 @@
 "use client"
 
 import React from "react"
-import dynamic from "next/dynamic"
+import MarkdownRenderer from "./MarkdownRenderer" // 直接匯入，允許 SSR
 
-// ✅ 僅在瀏覽器載入 MarkdownRenderer，避免伺服器預渲染時觸發 unified/remark
-const MarkdownRenderer = dynamic(() => import("./MarkdownRenderer"), { ssr: false })
-
-// 輕量 class 合併（免安裝 classnames）
+// 輕量 class 合併（免裝 classnames）
 function cx(...args: Array<string | false | null | undefined>) {
   return args.filter(Boolean).join(" ")
 }

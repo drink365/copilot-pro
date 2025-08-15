@@ -2,31 +2,28 @@
   "jurisdiction": "TW",
   "tax_type": "gift",
   "currency": "TWD",
-  "notes": "台灣贈與稅（結構範本）。請把數值改成正式值後，將 is_demo 改為 false。",
+  "notes": "台灣贈與稅（正式版）",
   "versions": [
     {
-      "effective_from": "2025-01-01",
+      "effective_from": "2024-01-01",
       "effective_to": "2025-12-31",
-      "is_demo": true,
+      "is_demo": false,
       "rate_model": {
         "kind": "brackets",
         "brackets": [
-          { "up_to": 0, "rate": 0.0 }
-        ],
-        "quick_deduction_hint": "如有速算扣除數，請在 brackets 物件中自行增加 quick_deduction 欄位"
+          { "up_to": 28110000, "rate": 0.10, "quick_deduction": 0 },
+          { "up_to": 56210000, "rate": 0.15, "quick_deduction": 1405000 },
+          { "up_to": null, "rate": 0.20, "quick_deduction": 4215000 }
+        ]
       },
       "exemptions": {
-        "annual_exclusion_per_donor": 0,
-        "spouse_split_allowed": true,
+        "annual_exclusion_per_donor": 2440000,
+        "spouse_split_allowed": false,
         "minor_child_exclusion": 0
-      },
-      "other_rules": {
-        "valuation_basis_hint": "請填寫股票/不動產/保單等評價基準說明",
-        "lifetime_exemption": 0
       },
       "sources": [
         {
-          "title": "財政部／贈與稅規定（請換成正式頁）",
+          "title": "（請填入你的官方依據頁面）贈與稅免稅額與級距",
           "url": "https://www.mof.gov.tw/",
           "retrieved_at": "2025-08-15"
         }

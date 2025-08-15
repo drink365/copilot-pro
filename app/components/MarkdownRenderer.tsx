@@ -13,13 +13,7 @@ type Props = {
 export default function MarkdownRenderer({ content, className }: Props) {
   return (
     <div className={className ?? "prose max-w-none"}>
-      <ReactMarkdown
-        // GitHub 風格支援：表格、待辦清單、刪除線等
-        remarkPlugins={[remarkGfm]}
-        // 安全考量：不解析原始 HTML，避免 XSS
-        // 若你確定來源安全、一定需要解析 HTML，再加 rehypeRaw（需額外安裝）
-        // rehypePlugins={[rehypeRaw]}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {content || ""}
       </ReactMarkdown>
     </div>

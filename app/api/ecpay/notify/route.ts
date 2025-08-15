@@ -16,7 +16,6 @@ export async function POST(req: NextRequest) {
   const local = genCheckMacValue(copy, cfg.hashKey, cfg.hashIV)
   if (remote !== local) return new Response("0|ERR", { status: 400 })
 
-  // 你可以在這裡寫入資料庫（若有）
   // 付款完成：params.RtnCode === "1"
   return new Response("1|OK", { status: 200 })
 }

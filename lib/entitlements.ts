@@ -14,6 +14,7 @@ function sign(value: string) {
   const h = crypto.createHmac("sha256", secret).update(value).digest("hex");
   return `${value}.${h}`;
 }
+
 function verify(signed: string | undefined): string | null {
   if (!signed) return null;
   const [value, sig] = signed.split(".");
@@ -31,18 +32,29 @@ export async function getUserPlan(): Promise<PlanId> {
 
 export async function setUserPlan(plan: PlanId) {
   const c = cookies();
-  c.set(COOKIE_NAME, sign(plan), { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: ONE_YEAR });
+  c.set(COOKIE_NAME, sign(plan), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: ONE_YEAR
+  });
 }
 
-export async function checkDailyQuota(): Promise<{ ok: boolean; remaining: number; used: number; limit: number }> {
+export async function checkDailyQuota(): Promise<{
+  ok: boolean;
+  remaining: number;
+  used: number;
+  limit: number;
+}> {
   const plan = await getUserPlan();
   const limit = PLANS[plan].dailyFreeChats;
 
-  // Pro/Pro+ 直接放行（仍可在 /api/chat 做 token 估算限制）
+  // Pro / Pro+ 無限制
   if (plan !== "free") return { ok: true, remaining: 999, used: 0, limit };
 
   const c = cookies();
-  const today = new Date().toISOString().slice(0,10);
+  const today = new Date().toISOString().slice(0, 10);
   const savedDay = c.get(COOKIE_DATE)?.value || "";
   let count = parseInt(c.get(COOKIE_COUNT)?.value || "0", 10);
 
@@ -55,8 +67,14 @@ export async function checkDailyQuota(): Promise<{ ok: boolean; remaining: numbe
     return { ok: false, remaining: 0, used: count, limit };
   }
 
-  c.set(COOKIE_COUNT, String(count + 1), { path: "/", httpOnly: true, sameSite: "lax" });
-  if (!savedDay) c.set(COOKIE_DATE, today, { path: "/", httpOnly: true, sameSite: "lax" });
+  c.set(COOKIE_COUNT, String(count + 1), {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax"
+  });
+  if (!savedDay) {
+    c.set(COOKIE_DATE, today, { path: "/", httpOnly: true, sameSite: "lax" });
+  }
 
   return { ok: true, remaining: limit - (count + 1), used: count + 1, limit };
 }

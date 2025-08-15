@@ -1,5 +1,4 @@
 // app/copilot/page.tsx
-export const dynamic = "force-dynamic" // ✅ 禁止 SSG，避免預渲染時跑到 unified/remark
 "use client"
 
 import { useEffect, useRef, useState } from "react"
@@ -153,7 +152,7 @@ export default function CopilotPage() {
         )}
 
         {/* 情境模板 */}
-        <section className="bg-white rounded-2xl border border-slate-200 shadow-soft px-5 py-4">
+        <section className="bg白 rounded-2xl border border-slate-200 shadow-soft px-5 py-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-slate-700">情境模板</h2>
             <span className="text-xs text-slate-500">免費可用；專業版支援更多模板與自訂</span>
@@ -189,7 +188,7 @@ export default function CopilotPage() {
               className="flex-1 rounded-2xl border border-slate-300 bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
               style={{ height: "auto" }}
             />
-            <button onClick={onSend} disabled={loading} className="rounded-2xl bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:opacity-50 shadow">
+            <button onClick={onSend} disabled={loading} className="rounded-2xl bg-brand-600 px-4 py-2 text白 hover:bg-brand-700 disabled:opacity-50 shadow">
               送出
             </button>
           </div>

@@ -47,7 +47,7 @@ export const TW = {
   // 贈與稅年度免稅額
   GIFT_ANNUAL_EXEMPTION: 2_440_000,
 
-  // 累進級距（元）與速算扣除（元）——贈與稅（與你提供數據一致）
+  // 累進級距（元）與速算扣除（元）——贈與稅
   GIFT_BRACKETS: [
     { upTo: 28_110_000, rate: 0.10, quick: 0, label: 10 as const },
     { upTo: 56_210_000, rate: 0.15, quick: 1_405_000, label: 15 as const },
@@ -55,10 +55,16 @@ export const TW = {
   ],
 };
 
-function applyBrackets(amount: number, brackets: { upTo: number; rate: number; quick: number; label: 10|15|20 }[]) {
+function applyBrackets(
+  amount: number,
+  brackets: { upTo: number; rate: number; quick: number; label: 10 | 15 | 20 }[]
+) {
   for (const b of brackets) {
     if (amount <= b.upTo) {
-      return { tax: Math.max(0, Math.round(amount * b.rate - b.quick)), bracket: b.label };
+      return {
+        tax: Math.max(0, Math.round(amount * b.rate - b.quick)),
+        bracket: b.label,
+      };
     }
   }
   return { tax: 0, bracket: 10 as const };
@@ -73,7 +79,8 @@ export function calcEstateTax(input: EstateInput): EstateResult {
     funeral: funeralOn ? TW.ESTATE_FUNERAL_DEDUCTION : 0,
     total: 0,
   };
-  deductions.total = deductions.base + deductions.spouse + deductions.children + deductions.funeral;
+  deductions.total =
+    deductions.base + deductions.spouse + deductions.children + deductions.funeral;
 
   const taxableEstate = Math.max(0, input.grossEstate - deductions.total);
   const { tax, bracket } = applyBrackets(taxableEstate, TW.ESTATE_BRACKETS);
@@ -82,7 +89,10 @@ export function calcEstateTax(input: EstateInput): EstateResult {
 
 export function calcGiftTax(input: GiftInput): GiftResult {
   const useEx = input.useAnnualExemption ?? true;
-  const taxableGift = Math.max(0, input.giftAmount - (useEx ? TW.GIFT_ANNUAL_EXEMPTION : 0));
+  const taxableGift = Math.max(
+    0,
+    input.giftAmount - (useEx ? TW.GIFT_ANNUAL_EXEMPTION : 0)
+  );
   const { tax, bracket } = applyBrackets(taxableGift, TW.GIFT_BRACKETS);
   return { taxableGift, tax, bracket };
 }
@@ -125,6 +135,10 @@ export function simulateCompare(params: {
   return {
     baseline: base,
     giftingPlan: { ...giftingEstate, totalGiftFree },
-    comboPlan: { ...comboEstate, totalGiftFree: totalGiftFree * 1.3, note: "贈與加碼 + 保險預留稅源/信託控管" },
+    comboPlan: {
+      ...comboEstate,
+      totalGiftFree: Math.round(totalGiftFree * 1.3),
+      note: "贈與加碼 + 保險預留稅源/信託控管",
+    },
   };
 }

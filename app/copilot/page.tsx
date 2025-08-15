@@ -10,7 +10,7 @@ export default function CopilotPage() {
   const [loading, setLoading] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)
 
-  // 自動把捲軸滑到最底
+  // 自動滾到底
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" })
   }, [messages])
@@ -19,7 +19,7 @@ export default function CopilotPage() {
     const content = input.trim()
     if (!content || loading) return
 
-    // 先加上使用者訊息
+    // 先加入使用者訊息
     const userMsg: ChatMessage = { role: "user", content, createdAt: Date.now() }
     setMessages(prev => [...prev, userMsg])
     setInput("")
@@ -66,7 +66,7 @@ export default function CopilotPage() {
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm px-5 py-4">
         <div ref={listRef} className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
           {messages.map((m, idx) => (
-            // 🔧 重點修正：改成傳「message」而不是 role/content
+            // ✅ 這裡改成傳「message」而不是 role/content
             <MessageBubble key={idx} message={m} />
           ))}
           {messages.length === 0 && (

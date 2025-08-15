@@ -1,3 +1,4 @@
+// app/components/MessageBubble.tsx
 "use client"
 
 import React, { useState } from "react"
@@ -30,9 +31,7 @@ export default function MessageBubble({ message }: Props) {
       await navigator.clipboard.writeText(message.content || "")
       setCopied(true)
       setTimeout(() => setCopied(false), 1200)
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   return (
@@ -46,9 +45,7 @@ export default function MessageBubble({ message }: Props) {
       <div
         className={[
           "shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold",
-          isUser
-            ? "bg-blue-600 text-white order-2"
-            : "bg-neutral-200 text-neutral-700 order-1"
+          isUser ? "bg-blue-600 text-white order-2" : "bg-neutral-200 text-neutral-700 order-1"
         ].join(" ")}
         aria-hidden
         title={isUser ? "You" : isAssistant ? "Assistant" : "System"}

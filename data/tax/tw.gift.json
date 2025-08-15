@@ -1,0 +1,36 @@
+{
+  "jurisdiction": "TW",
+  "tax_type": "gift",
+  "currency": "TWD",
+  "notes": "台灣贈與稅（結構範本）。請把數值改成正式值後，將 is_demo 改為 false。",
+  "versions": [
+    {
+      "effective_from": "2025-01-01",
+      "effective_to": "2025-12-31",
+      "is_demo": true,
+      "rate_model": {
+        "kind": "brackets",
+        "brackets": [
+          { "up_to": 0, "rate": 0.0 }
+        ],
+        "quick_deduction_hint": "如有速算扣除數，請在 brackets 物件中自行增加 quick_deduction 欄位"
+      },
+      "exemptions": {
+        "annual_exclusion_per_donor": 0,
+        "spouse_split_allowed": true,
+        "minor_child_exclusion": 0
+      },
+      "other_rules": {
+        "valuation_basis_hint": "請填寫股票/不動產/保單等評價基準說明",
+        "lifetime_exemption": 0
+      },
+      "sources": [
+        {
+          "title": "財政部／贈與稅規定（請換成正式頁）",
+          "url": "https://www.mof.gov.tw/",
+          "retrieved_at": "2025-08-15"
+        }
+      ]
+    }
+  ]
+}

@@ -2,40 +2,41 @@
   "jurisdiction": "TW",
   "tax_type": "estate",
   "currency": "TWD",
-  "notes": "台灣遺產稅（結構範本）。請把數值改成正式值後，將 is_demo 改為 false。",
+  "notes": "台灣遺產稅（正式版）",
   "versions": [
     {
-      "effective_from": "2025-01-01",
+      "effective_from": "2024-01-01",
       "effective_to": "2025-12-31",
-      "is_demo": true,
+      "is_demo": false,
       "rate_model": {
-        "kind": "flat_or_brackets",
-        "flat_rate": 0.0,
+        "kind": "brackets",
         "brackets": [
-          { "up_to": 0, "rate": 0.0 }
-        ],
-        "quick_deduction_hint": "如有速算扣除數，請在 brackets 物件中自行增加 quick_deduction 欄位"
+          { "up_to": 56210000, "rate": 0.10, "quick_deduction": 0 },
+          { "up_to": 112420000, "rate": 0.15, "quick_deduction": 2810000 },
+          { "up_to": null, "rate": 0.20, "quick_deduction": 8430000 }
+        ]
       },
       "basic_exemptions": {
-        "basic": 0,
-        "spouse_deduction": 0,
-        "lineal_descendant_deduction_per_person": 0,
-        "lineal_ascendant_deduction_per_person": 0,
-        "disabled_deduction_per_person": 0
+        "basic": 13330000,
+        "spouse_deduction": 5530000,
+        "lineal_descendant_deduction_per_person": 560000,
+        "lineal_ascendant_deduction_per_person": 1380000,
+        "lineal_ascendant_max_count": 2,
+        "disabled_deduction_per_person": 6930000,
+        "other_dependents_deduction_per_person": 560000
       },
       "other_deductions": {
-        "funeral_expense_cap": 0,
+        "funeral_expense_cap": 1380000,
         "life_insurance_exempt_cap": 0,
         "debts_allowable": true
       },
       "special_rules": {
         "life_insurance_treatment": "exempt_up_to_cap",
-        "real_property_special": "none",
         "currency": "TWD"
       },
       "sources": [
         {
-          "title": "財政部／遺產稅規定（請換成正式頁）",
+          "title": "（請填入你的官方依據頁面）遺產稅免稅額與級距",
           "url": "https://www.mof.gov.tw/",
           "retrieved_at": "2025-08-15"
         }

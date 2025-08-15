@@ -3,59 +3,60 @@
 
 import { useEffect, useState } from "react"
 
-export default function AdminBar({ enabled = false }: { enabled?: boolean }) {
+export default function AdminBar({ enabled = true }: { enabled?: boolean }) {
   const [key, setKey] = useState("")
   const [isPro, setIsPro] = useState<boolean | null>(null)
   const [msg, setMsg] = useState<string>("")
 
-  useEffect(() => {
-    const k = localStorage.getItem("ADMIN_SECRET") || ""
-    setKey(k)
-    refresh()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   async function refresh() {
     try {
-      const r = await fetch("/api/debug", { cache: "no-store" })
+      const r = await fetch("/api/debug")
       const d = await r.json()
-      setIsPro(!!d.isPro)
+      setIsPro(!!d.isPro || d.plan === "pro" || d.plan === "pro_plus")
     } catch {
       setIsPro(null)
     }
   }
 
-  async function toggle(mode: "on" | "off") {
-    if (!key) return setMsg("請先輸入 ADMIN_SECRET")
-    setMsg("處理中…")
-    try {
-      const r = await fetch(`/api/dev/pro?key=${encodeURIComponent(key)}&mode=${mode}`)
-      const d = await r.json()
-      if (d.ok) {
-        localStorage.setItem("ADMIN_SECRET", key)
-        await refresh()
-        setMsg(mode === "on" ? "已解鎖 Pro（此瀏覽器）" : "已還原為免費（此瀏覽器）")
-      } else {
-        setMsg(d.error || "操作失敗")
-      }
-    } catch (e: any) {
-      setMsg(e?.message || "操作失敗")
-    }
-  }
+  useEffect(() => {
+    const k = localStorage.getItem("ADMIN_SECRET") || ""
+    setKey(k)
+    refresh()
+  }, [])
 
   if (!enabled) return null
 
+  async function toggle(mode: "on" | "off") {
+    setMsg("")
+    try {
+      const u = new URL("/api/dev/pro", window.location.origin)
+      u.searchParams.set("key", key)
+      u.searchParams.set("mode", mode)
+      const r = await fetch(u.toString())
+      const d = await r.json()
+      if (!r.ok) throw new Error(d?.error || "failed")
+      setMsg(mode === "on" ? "已解鎖 Pro（30 天）" : "已還原免費")
+      await refresh()
+    } catch (e: any) {
+      setMsg(`錯誤：${e.message}`)
+    }
+  }
+
   return (
-    <div className="fixed inset-x-0 top-0 z-50 bg-amber-50/95 backdrop-blur border-b border-amber-200 text-amber-900">
-      <div className="mx-auto max-w-6xl px-3 py-2 flex items-center gap-2 text-sm">
-        <span className="font-semibold">Admin</span>
-        <span className="text-xs text-amber-700">（僅測試用）</span>
-        <div className="flex items-center gap-2 ml-auto">
+    <div className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200">
+      <div className="mx-auto max-w-5xl flex items-center justify-between px-4 py-2">
+        <div className="text-xs text-amber-800">
+          管理員模式：輸入 ADMIN_SECRET 可快速切換 Free/Pro 狀態（本機 cookie）。
+        </div>
+        <div className="flex items-center gap-2">
           <input
+            className="rounded border border-amber-400 px-2 py-1 text-xs"
+            placeholder="ADMIN_SECRET"
             value={key}
-            onChange={e => setKey(e.target.value)}
-            placeholder="輸入 ADMIN_SECRET"
-            className="rounded border border-amber-300 bg-white px-2 py-1 text-xs min-w-[240px] shadow-sm"
+            onChange={(e) => {
+              setKey(e.target.value)
+              localStorage.setItem("ADMIN_SECRET", e.target.value)
+            }}
           />
           <button onClick={() => toggle("on")} className="rounded bg-amber-600 text-white px-2 py-1 text-xs hover:bg-amber-700">
             解鎖 Pro

@@ -33,23 +33,23 @@ export async function POST(req: NextRequest) {
     // 2) 若使用者句子裡有明顯金額等提示，嘗試給個基本試算（僅示意抓第一個數字）
     let calcBlock = "";
     if (tax.found && tax.topic === "estate") {
-      // 嘗試從語句抓總額（你可以改成更完整的欄位抽取）
       const maybeAmount = roughNumberIn(content);
       if (maybeAmount && maybeAmount > 0) {
         const r = estimateEstateTW({
           jurisdiction: "TW",
           gross_estate: maybeAmount,
           debts: 0, funeral_expense: 0, life_insurance_payout: 0,
-          spouse_count: 0, lineal_descendants: 0, lineal_ascendants: 0, disabled_count: 0
+          spouse_count: 0, lineal_descendants: 0, lineal_ascendants: 0, disabled_count: 0,
+          other_dependents: 0
         });
         calcBlock =
 `【系統試算（僅依題句抓到的總額示意）】
 - 遺產總額：${r.inputs.gross_estate.toLocaleString()} ${r.currency}
-- 基本免稅等合計：${(r.computed.basic_exemptions_total + r.computed.funeral_expense_allowed + r.computed.life_insurance_exempted + r.computed.debts_allowed).toLocaleString()} ${r.currency}
+- 基本免稅/扣除合計：${(r.computed.basic_exemptions_total + r.computed.funeral_expense_allowed + r.computed.life_insurance_exempted + r.computed.debts_allowed).toLocaleString()} ${r.currency}
 - 應稅基：${r.computed.taxable_base.toLocaleString()} ${r.currency}
 - 稅率/級距：${(r.computed.rate_applied*100).toFixed(0)}%
 - 試算稅額：${r.computed.tax_due.toLocaleString()} ${r.currency}
-（實務請完整輸入：配偶/直系人數、喪葬費、債務、壽險等，才能準確計算）`;
+（實務請完整輸入：配偶/直系人數、喪葬費、債務、壽險/其他撫養等，才能準確計算）`;
       }
     }
     if (tax.found && tax.topic === "gift") {
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 - 應稅基：${r.computed.taxable_base.toLocaleString()} ${r.currency}
 - 稅率/級距：${(r.computed.rate_applied*100).toFixed(0)}%
 - 試算稅額：${r.computed.tax_due.toLocaleString()} ${r.currency}
-（實務請補充：是否夫妻合贈、未成年子女、其他扣除規則，才能準確計算）`;
+（實務請補充：是否合贈、未成年子女等，才能準確計算）`;
       }
     }
 

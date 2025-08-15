@@ -2,14 +2,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setUserPlan } from "@/lib/entitlements";
 
-// 你應該已經有 ECPay 驗證邏輯
-// 在驗證成功的地方加上 setUserPlan()
+export const runtime = "nodejs"
 
-export async function GET(req: NextRequest) {
-  // TODO: 這裡是你的 ECPay 驗證流程
-  // 驗證成功後：
-  await setUserPlan("pro"); // 如果是 Pro+
+export async function GET(_req: NextRequest) {
+  // TODO：正式上線時請依你的交易流程驗證（可查詢 /api/ecpay/query）
+  // 這裡僅示範付款完成後設定方案：
+  await setUserPlan("pro"); // Pro+
   // await setUserPlan("pro_plus");
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.redirect(new URL("/pricing?success=1", process.env.SITE_URL || "https://example.com"));
 }

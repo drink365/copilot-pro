@@ -1,4 +1,3 @@
-// app/layout.tsx
 import type { Metadata } from "next"
 import "./globals.css"
 import BrandHeader from "./components/BrandHeader"
@@ -6,7 +5,7 @@ import AdminBar from "./components/AdminBar"
 
 export const metadata: Metadata = {
   title: "永傳家族辦公室｜家族傳承 Copilot",
-  description: "以準備與從容為核心的家族財富管理助手",
+  description: "以準備與從容為核心的家族財富管理助手"
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

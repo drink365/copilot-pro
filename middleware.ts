@@ -45,5 +45,5 @@ export function middleware(req: NextRequest) {
  * matcher: ["/tools/:path*", "/advisor"]
  */
 export const config = {
-  matcher: ["/tools/:path*"],
+  matcher: ["/tools/:path*", "/advisor"],
 };

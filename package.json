@@ -12,6 +12,7 @@
     "@tailwindcss/forms": "^0.5.7",
     "@tailwindcss/typography": "^0.5.15",
     "autoprefixer": "^10.4.20",
+    "iconv-lite": "^0.6.3",
     "next": "14.2.5",
     "nodemailer": "6.9.11",
     "pdfkit": "^0.13.0",

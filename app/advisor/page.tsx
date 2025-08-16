@@ -9,9 +9,8 @@ export default function Advisor() {
   const [input, setInput] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [loading, setLoading] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLDivElement>(null);
 
-  // 從 /flow/start 存的情境帶入
   useEffect(() => {
     const raw = localStorage.getItem("ycfo_case");
     if (raw) {
@@ -19,25 +18,22 @@ export default function Advisor() {
         const obj = JSON.parse(raw);
         const x = obj?.input;
         const s =
-          `我的情境：遺產總額 NT$ ${Number(x?.grossEstate || 0).toLocaleString()}；` +
-          `子女人數 ${x?.numChildren || 0}；` +
+          `我的情境：遺產總額 NT$ ${(x?.grossEstate||0).toLocaleString()}；` +
+          `子女人數 ${x?.numChildren||0}；` +
           `配偶扣除 ${x?.includeSpouse ? "有" : "無"}；` +
-          `逐年贈與 ${x?.years || 0} 年 × ${x?.recipients || 0} 人。`;
+          `逐年贈與 ${x?.years||0} 年 × ${x?.recipients||0} 人。`;
         setContext(s);
       } catch {}
     }
   }, []);
 
   useEffect(() => {
-    ref.current?.scrollTo({ top: ref.current.scrollHeight });
+    box.current?.scrollTo({ top: box.current.scrollHeight });
   }, [msgs, loading]);
 
   const send = async () => {
     if (!input.trim() && !msgs.length) return;
-    const newMsgs = [
-      ...msgs,
-      { role: "user", content: input || "（空白訊息）" } as Msg,
-    ];
+    const newMsgs = [...msgs, { role: "user", content: input || "（空白）" } as Msg];
     setMsgs(newMsgs);
     setInput("");
     setLoading(true);
@@ -66,17 +62,9 @@ export default function Advisor() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-4">
       <h1 className="text-2xl font-semibold">🧑‍⚖️ 顧問 AI</h1>
-      {context && (
-        <div className="text-sm text-gray-600 bg-gray-50 border rounded-xl p-3">
-          {context}
-        </div>
-      )}
-      <div ref={ref} className="border rounded-xl min-h-[320px] max-h-[480px] p-4 overflow-auto bg-white">
-        {!msgs.length && (
-          <div className="text-gray-500 text-sm">
-            請直接輸入您的疑問，例如：「我該先做贈與還是配置保單？」或「信託能不能保障未婚弟弟？」。
-          </div>
-        )}
+      {context && <div className="text-sm text-gray-600 bg-gray-50 border rounded-xl p-3">{context}</div>}
+      <div ref={box} className="border rounded-xl min-h-[320px] max-h-[480px] p-4 overflow-auto bg-white">
+        {!msgs.length && <div className="text-gray-500 text-sm">請輸入您的疑問…</div>}
         {msgs.map((m, i) => (
           <div key={i} className={`mb-3 ${m.role === "user" ? "text-right" : "text-left"}`}>
             <div className={`inline-block rounded-2xl px-3 py-2 ${m.role === "user" ? "bg-black text-white" : "bg-gray-100"}`}>

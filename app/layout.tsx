@@ -1,32 +1,61 @@
-import type { Metadata } from "next"
-import "./globals.css"
-import BrandHeader from "./components/BrandHeader"
+// app/layout.tsx
+import "./globals.css";
+import { Inter } from "next/font/google";
+import Link from "next/link";
+import { BRAND } from "@/lib/config";
 
-export const metadata: Metadata = {
-  title: "永傳家族辦公室｜家族傳承 Copilot",
-  description: "以準備與從容為核心的家族財富管理助手"
-}
+const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata = {
+  title: BRAND.NAME,
+  description: `${BRAND.NAME} AI Copilot`,
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="zh-Hant">
-      <body className="bg-slate-50 text-slate-800">
-        <BrandHeader />
-  
-        <main className="mx-auto max-w-5xl px-4 py-6">
-          {children}
-        </main>
-        <footer className="mt-12 border-t border-slate-200 bg-white/70">
-          <div className="mx-auto max-w-5xl px-4 py-6 text-sm text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div>© {new Date().getFullYear()} 永傳家族辦公室 YongChuan Family Office</div>
-            <div className="flex items-center gap-4">
-              <a href="/privacy" className="hover:text-[var(--brand-red)]">隱私權政策</a>
-              <a href="/terms" className="hover:text-[var(--brand-red)]">服務條款</a>
-              <a href="/contact" className="hover:text-[var(--brand-red)]">聯絡我們</a>
+      <body className={inter.className}>
+        <div className="min-h-screen flex flex-col">
+          {/* 主體內容 */}
+          <main className="flex-1">{children}</main>
+
+          {/* 頁尾 */}
+          <footer className="border-t bg-gray-50 text-gray-600 text-sm">
+            <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              {/* 版權 */}
+              <div>
+                © {new Date().getFullYear()} {BRAND.NAME}. All rights reserved.
+              </div>
+
+              {/* 法遵連結 */}
+              <nav className="flex gap-4">
+                <Link
+                  href="/privacy"
+                  className="hover:text-gray-900 transition-colors"
+                >
+                  隱私權政策
+                </Link>
+                <Link
+                  href="/terms"
+                  className="hover:text-gray-900 transition-colors"
+                >
+                  服務條款
+                </Link>
+                <Link
+                  href="/contact"
+                  className="hover:text-gray-900 transition-colors"
+                >
+                  聯絡我們
+                </Link>
+              </nav>
             </div>
-          </div>
-        </footer>
+          </footer>
+        </div>
       </body>
     </html>
-  )
+  );
 }

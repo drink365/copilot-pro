@@ -1,144 +1,86 @@
 // lib/tax/tw.ts
-export type EstateInput = {
-  grossEstate: number;           // 總遺產(元)
-  numChildren: number;           // 子女數
-  includeSpouse: boolean;        // 配偶是否健在且可扣除
-  includeFuneralDeduction?: boolean; // 是否列喪葬費扣除(預設 true)
-};
+// 簡化版台灣遺產/贈與稅試算（顧問引導用；實務以申報時法令為準）
 
-export type EstateResult = {
-  deductions: {
-    base: number;
-    spouse: number;
-    children: number;
-    funeral: number;
-    total: number;
-  };
-  taxableEstate: number;
-  tax: number;
-  bracket: 10 | 15 | 20;
-};
+export type Bracket = 10 | 15 | 20;
 
-export type GiftInput = {
-  giftAmount: number;   // 贈與金額(元)
-  useAnnualExemption?: boolean; // 是否先扣除每年免稅額(預設 true)
-};
+export const TWD = (n: number) => Math.max(0, Math.round(n || 0));
+export const fmt = (n: number) => TWD(n).toLocaleString("zh-TW");
 
-export type GiftResult = {
-  taxableGift: number;
-  tax: number;
-  bracket: 10 | 15 | 20;
-};
+// 免稅/扣除（常見數字）
+export const ESTATE_BASIC_EXEMPTION = 12_000_000; // 一般免稅額 1,200 萬
+export const SPOUSE_DEDUCTION = 5_530_000;        // 配偶扣除 553 萬
+export const FUNERAL_DEDUCTION = 1_380_000;       // 喪葬費 138 萬
+export const GIFT_ANNUAL_EXEMPTION = 2_440_000;   // 贈與年免稅 244 萬/人
 
-export const TW = {
-  // 扣除額（依你提供與近年實務慣用值）
-  ESTATE_BASE_EXEMPTION: 13_330_000,
-  ESTATE_SPOUSE_DEDUCTION: 5_530_000,
-  ESTATE_CHILD_DEDUCTION_EACH: 560_000,
-  ESTATE_FUNERAL_DEDUCTION: 1_380_000,
-
-  // 累進級距（元）與速算扣除（元）——遺產稅
-  ESTATE_BRACKETS: [
-    { upTo: 56_210_000, rate: 0.10, quick: 0, label: 10 as const },
-    { upTo: 112_420_000, rate: 0.15, quick: 2_810_000, label: 15 as const },
-    { upTo: Infinity, rate: 0.20, quick: 8_430_000, label: 20 as const },
-  ],
-
-  // 贈與稅年度免稅額
-  GIFT_ANNUAL_EXEMPTION: 2_440_000,
-
-  // 累進級距（元）與速算扣除（元）——贈與稅
-  GIFT_BRACKETS: [
-    { upTo: 28_110_000, rate: 0.10, quick: 0, label: 10 as const },
-    { upTo: 56_210_000, rate: 0.15, quick: 1_405_000, label: 15 as const },
-    { upTo: Infinity, rate: 0.20, quick: 4_215_000, label: 20 as const },
-  ],
-};
-
-function applyBrackets(
-  amount: number,
-  brackets: { upTo: number; rate: number; quick: number; label: 10 | 15 | 20 }[]
-) {
-  for (const b of brackets) {
-    if (amount <= b.upTo) {
-      return {
-        tax: Math.max(0, Math.round(amount * b.rate - b.quick)),
-        bracket: b.label,
-      };
-    }
-  }
-  return { tax: 0, bracket: 10 as const };
+export function pickBracket(taxable: number): Bracket {
+  if (taxable <= 50_000_000) return 10;
+  if (taxable <= 100_000_000) return 15;
+  return 20;
 }
 
-export function calcEstateTax(input: EstateInput): EstateResult {
-  const funeralOn = input.includeFuneralDeduction ?? true;
-  const deductions = {
-    base: TW.ESTATE_BASE_EXEMPTION,
-    spouse: input.includeSpouse ? TW.ESTATE_SPOUSE_DEDUCTION : 0,
-    children: Math.max(0, input.numChildren) * TW.ESTATE_CHILD_DEDUCTION_EACH,
-    funeral: funeralOn ? TW.ESTATE_FUNERAL_DEDUCTION : 0,
-    total: 0,
-  };
-  deductions.total =
-    deductions.base + deductions.spouse + deductions.children + deductions.funeral;
-
-  const taxableEstate = Math.max(0, input.grossEstate - deductions.total);
-  const { tax, bracket } = applyBrackets(taxableEstate, TW.ESTATE_BRACKETS);
-  return { deductions, taxableEstate, tax, bracket };
-}
-
-export function calcGiftTax(input: GiftInput): GiftResult {
-  const useEx = input.useAnnualExemption ?? true;
-  const taxableGift = Math.max(
-    0,
-    input.giftAmount - (useEx ? TW.GIFT_ANNUAL_EXEMPTION : 0)
-  );
-  const { tax, bracket } = applyBrackets(taxableGift, TW.GIFT_BRACKETS);
-  return { taxableGift, tax, bracket };
-}
-
-/**
- * 簡易比較邏輯：
- * - 逐年贈與：years 年 × recipients × 年免稅額，先從遺產總額中扣除（不得小於0），再做遺產稅估算
- * - 組合方案：以「較積極的贈與」降低遺產底盤 + 保險作稅源預留（稅額不變但現金流改善），此處回傳兩組資訊
- */
-export function simulateCompare(params: {
-  grossEstate: number;
-  numChildren: number;
-  includeSpouse: boolean;
-  years: number;            // 贈與年數（例如 10 年）
-  recipients: number;       // 受贈人數（可含配偶、子女、孫子女）
+// 遺產稅粗估
+export function calcEstateTax(args: {
+  grossEstate: number;          // 遺產總額
+  includeSpouse?: boolean;      // 是否含配偶扣除
+  extraDeductions?: number;     // 其他扣除（特別扣除等）
 }) {
-  const base = calcEstateTax({
-    grossEstate: params.grossEstate,
-    numChildren: params.numChildren,
-    includeSpouse: params.includeSpouse,
-  });
+  const gross = TWD(args.grossEstate);
+  const deductions =
+    ESTATE_BASIC_EXEMPTION +
+    FUNERAL_DEDUCTION +
+    (args.includeSpouse ? SPOUSE_DEDUCTION : 0) +
+    TWD(args.extraDeductions || 0);
 
-  const totalGiftFree = params.years * params.recipients * TW.GIFT_ANNUAL_EXEMPTION;
-  const estateAfterGifting = Math.max(0, params.grossEstate - totalGiftFree);
+  const taxableEstate = Math.max(0, gross - deductions);
+  const bracket = pickBracket(taxableEstate);
+  const tax = Math.round(taxableEstate * (bracket / 100));
 
-  const giftingEstate = calcEstateTax({
-    grossEstate: estateAfterGifting,
-    numChildren: params.numChildren,
-    includeSpouse: params.includeSpouse,
-  });
+  return { gross, deductions, taxableEstate, bracket, tax };
+}
 
-  // 組合：假設較積極贈與（再加碼 30% 受贈力道）後的估算
-  const aggressiveGift = Math.max(0, estateAfterGifting - totalGiftFree * 0.3);
-  const comboEstate = calcEstateTax({
-    grossEstate: aggressiveGift,
-    numChildren: params.numChildren,
-    includeSpouse: params.includeSpouse,
-  });
+// 贈與免稅累計（多人 × 多年）
+export function calcGiftFree(years: number, recipients: number) {
+  const y = Math.max(0, Math.floor(years || 0));
+  const r = Math.max(0, Math.floor(recipients || 0));
+  return TWD(y * r * GIFT_ANNUAL_EXEMPTION);
+}
 
-  return {
-    baseline: base,
-    giftingPlan: { ...giftingEstate, totalGiftFree },
-    comboPlan: {
-      ...comboEstate,
-      totalGiftFree: Math.round(totalGiftFree * 1.3),
-      note: "贈與加碼 + 保險預留稅源/信託控管",
-    },
+// 三方案比較：現況／逐年贈與／組合（示意）
+export function simulateCompare(args: {
+  grossEstate: number;
+  numChildren?: number;
+  includeSpouse?: boolean;
+  years: number;
+  recipients: number; // 受贈人數（通常配偶+子女）
+}) {
+  const gross = TWD(args.grossEstate);
+  const includeSpouse = !!args.includeSpouse;
+
+  // A 現況
+  const baseline = calcEstateTax({ grossEstate: gross, includeSpouse });
+
+  // B 逐年贈與（只計入免稅額的長期效果）
+  const totalGiftFree = Math.min(calcGiftFree(args.years, args.recipients), gross);
+  const giftingTaxable = Math.max(0, gross - totalGiftFree - (ESTATE_BASIC_EXEMPTION + FUNERAL_DEDUCTION + (includeSpouse ? SPOUSE_DEDUCTION : 0)));
+  const giftingBracket = pickBracket(giftingTaxable);
+  const giftingTax = Math.round(giftingTaxable * (giftingBracket / 100));
+  const giftingPlan = {
+    totalGiftFree,
+    taxableEstate: giftingTaxable,
+    bracket: giftingBracket,
+    tax: giftingTax,
   };
+
+  // C 組合方案（示意：在 B 的基礎上，再用資金/保單/信託優化 10% 稅基）
+  const comboTaxable = Math.max(0, Math.round(giftingTaxable * 0.9));
+  const comboBracket = pickBracket(comboTaxable);
+  const comboTax = Math.round(comboTaxable * (comboBracket / 100));
+  const comboPlan = {
+    totalGiftFree,
+    taxableEstate: comboTaxable,
+    bracket: comboBracket,
+    tax: comboTax,
+  };
+
+  return { baseline, giftingPlan, comboPlan };
 }

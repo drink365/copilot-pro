@@ -1,69 +1,55 @@
 // app/tools/gift/page.tsx
 "use client";
-import { useState } from "react";
-import CalculatorCard from "@/components/CalculatorCard";
-
-type Result = { taxableGift: number; tax: number; bracket: 10 | 15 | 20 };
+import { useEffect, useState } from "react";
 
 export default function GiftTool() {
-  const [giftAmount, setGiftAmount] = useState<number>(5_000_000);
-  const [useEx, setUseEx] = useState<boolean>(true);
-  const [res, setRes] = useState<Result | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [years, setYears] = useState<number>(10);
+  const [recipients, setRecipients] = useState<number>(4);
+  const [grossEstate, setGrossEstate] = useState<number>(300_000_000);
+  const [res, setRes] = useState<any>(null);
 
-  const run = async () => {
-    setLoading(true);
-    const r = await fetch("/api/tax/gift", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ giftAmount, useAnnualExemption: useEx }),
-    });
-    setRes(await r.json());
-    setLoading(false);
-  };
+  const n = (x:number)=> x.toLocaleString();
+
+  useEffect(() => {
+    const run = async () => {
+      const r = await fetch("/api/tax/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ grossEstate, years, recipients }),
+      });
+      const data = await r.json();
+      if (r.ok) setRes(data);
+    };
+    run();
+  }, [years, recipients, grossEstate]);
 
   return (
-    <div className="max-w-3xl mx-auto py-8 space-y-6">
-      <CalculatorCard
-        title="🇹🇼 贈與稅試算（年度免稅 244 萬）"
-        footer={
-          <button
-            onClick={run}
-            disabled={loading}
-            className="px-4 py-2 rounded-xl bg-black text-white hover:opacity-90"
-          >
-            {loading ? "計算中..." : "開始計算"}
-          </button>
-        }
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex flex-col gap-1">
-            <span>贈與金額（元）</span>
-            <input
-              type="number"
-              value={giftAmount}
-              onChange={(e) => setGiftAmount(Number(e.target.value))}
-              className="rounded-lg border p-2"
-            />
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={useEx}
-              onChange={(e) => setUseEx(e.target.checked)}
-            />
-            <span>先扣年度免稅額（244 萬）</span>
-          </label>
-        </div>
+    <div className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+      <h1 className="text-2xl font-semibold">🎁 贈與免稅模擬</h1>
+      <div className="grid md:grid-cols-3 gap-4">
+        <label className="flex flex-col gap-1">
+          <span>逐年贈與年數</span>
+          <input type="number" className="rounded-lg border p-2" value={years}
+                 onChange={e=>setYears(Number(e.target.value))}/>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span>受贈人數</span>
+          <input type="number" className="rounded-lg border p-2" value={recipients}
+                 onChange={e=>setRecipients(Number(e.target.value))}/>
+        </label>
+        <label className="flex flex-col gap-1">
+          <span>遺產總額（元）</span>
+          <input type="number" className="rounded-lg border p-2" value={grossEstate}
+                 onChange={e=>setGrossEstate(Number(e.target.value))}/>
+        </label>
+      </div>
 
-        {res && (
-          <div className="rounded-xl bg-gray-50 p-4 space-y-2">
-            <div>課稅贈與額：<b>{res.taxableGift.toLocaleString()}</b></div>
-            <div>適用級距：<b>{res.bracket}%</b></div>
-            <div className="text-lg">預估贈與稅：<b className="text-emerald-700">{res.tax.toLocaleString()} 元</b></div>
-          </div>
-        )}
-      </CalculatorCard>
+      {res && (
+        <div className="rounded-2xl border bg-white p-6 space-y-2">
+          <div>逐年免稅贈與（累計，B/C 方案）：<b>{n(res.giftingPlan.totalGiftFree)}</b></div>
+          <div>（依 244 萬/人/年 × 受贈人數 × 年數 計算，上限為遺產總額）</div>
+        </div>
+      )}
     </div>
   );
 }

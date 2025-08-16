@@ -5,8 +5,8 @@ export const BRAND = {
 };
 
 export const MAIL = {
-  TO: process.env.BOOKING_TO_EMAIL || "your@mail.com",
-  FROM: process.env.MAIL_FROM || "Grace Family Office <no-reply@yourdomain.com>",
+  TO: process.env.BOOKING_TO_EMAIL || "123@gracefo.com",
+  FROM: process.env.MAIL_FROM || "Grace Family Office <123@gracefo.com>",
 };
 
 export const MODEL = {

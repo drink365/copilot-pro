@@ -1,94 +1,47 @@
-"use client"
+// app/components/BrandHeader.tsx
+"use client";
 
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { useState } from "react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
-const nav = [
-  { href: "/", label: "首頁" },
-  { href: "/copilot", label: "Copilot" },
-  { href: "/tax", label: "稅務試算" },
-  { href: "/pricing", label: "方案" }
-]
+const navItems = [
+  { href: "/flow/start", label: "互動模擬" },
+  { href: "/tools/compare", label: "工具" },
+  { href: "/book", label: "預約諮詢" },
+  { href: "/pro/login", label: "顧問登入" },
+];
 
 export default function BrandHeader() {
-  const pathname = usePathname()
-  const [open, setOpen] = useState(false)
+  const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
-      <div className="mx-auto max-w-5xl px-4 py-2 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          <Image
-            src="/brand/logo.png"
-            alt="永傳家族辦公室"
-            width={180}
-            height={40}
-            priority
-            className="h-8 w-auto"
-          />
-          <span className="hidden sm:flex flex-col leading-tight">
-            <span className="text-[13px] text-slate-500">Family Office</span>
-            <span className="text-[15px] font-semibold tracking-wide text-[var(--brand-dark)]">
-              永傳家族辦公室
-            </span>
-          </span>
+    <header className="border-b bg-white">
+      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        {/* 品牌名稱 */}
+        <Link href="/" className="text-lg font-semibold text-gray-900">
+          永傳家族辦公室
         </Link>
 
-        <nav className="hidden md:flex items-center gap-1">
-          {nav.map((n) => {
-            const active = pathname === n.href
+        {/* 導覽列 */}
+        <nav className="flex gap-6">
+          {navItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
             return (
               <Link
-                key={n.href}
-                href={n.href}
-                className={[
-                  "px-3 py-1.5 rounded-lg text-sm transition-colors",
-                  active
-                    ? "bg-[var(--brand-red)] text-white"
-                    : "text-slate-700 hover:bg-slate-100"
-                ].join(" ")}
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "text-sm font-medium hover:text-gray-900 transition-colors",
+                  isActive ? "text-gray-900" : "text-gray-500"
+                )}
               >
-                {n.label}
+                {item.label}
               </Link>
-            )
+            );
           })}
         </nav>
-
-        <button
-          onClick={() => setOpen(v => !v)}
-          className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300"
-          aria-label="開啟選單"
-        >
-          ☰
-        </button>
       </div>
-
-      {open && (
-        <div className="md:hidden border-t border-slate-200 bg-white">
-          <div className="mx-auto max-w-5xl px-4 py-2 flex flex-col gap-1">
-            {nav.map((n) => {
-              const active = pathname === n.href
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  onClick={() => setOpen(false)}
-                  className={[
-                    "px-3 py-2 rounded-lg text-sm",
-                    active
-                      ? "bg-[var(--brand-red)] text-white"
-                      : "text-slate-700 hover:bg-slate-100"
-                  ].join(" ")}
-                >
-                  {n.label}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </header>
-  )
+  );
 }

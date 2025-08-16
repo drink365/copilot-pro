@@ -1,25 +1,21 @@
 // app/api/chat/route.ts
 import { NextResponse } from "next/server";
 import { LEGACY_COACH_SYSTEM } from "@/lib/prompts/coach";
+import { MODEL } from "@/lib/config";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { messages, model } = body ?? {};
-
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: "messages must be an array" }, { status: 400 });
     }
-
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
+    if (!MODEL.OPENAI_KEY) {
       return NextResponse.json({ error: "OPENAI_API_KEY not configured" }, { status: 500 });
     }
 
-    const usedModel = model || process.env.OPENAI_MODEL || "gpt-5-nano";
-
     const payload = {
-      model: usedModel,
+      model: model || MODEL.OPENAI_MODEL,
       messages: [
         { role: "system", content: LEGACY_COACH_SYSTEM },
         ...messages,
@@ -30,7 +26,7 @@ export async function POST(req: Request) {
     const resp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${MODEL.OPENAI_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
